@@ -1,5 +1,6 @@
 #include <Novice.h>
 
+#include "Vec3.h"
 #include <MyMatrix4x4.h>
 
 const char kWindowTitle[]="LC1B_08_オリハライッセイ";
@@ -10,18 +11,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
 	//==============初期化====================
-	MyMatrix4x4 translateMa=MakeMatrix::Translate({ 4.1f,2.6f,0.8f });
-	MyMatrix4x4 scaleMa=MakeMatrix::Scale({ 1.5f,5.2f,7.3f });
-
-	Vec3 point={ 2.3f,3.8f,1.4f };
-	MyMatrix4x4 transformMa={
-		1.0f,2.0f,3.0f,4.0f,
-		3.0f,1.0f,1.0f,2.0f,
-		1.0f,4.0f,2.0f,3.0f,
-		2.0f,2.0f,1.0f,3.0f
-	};
-
-	Vec3 transfomed=Transform(point, transformMa);
+	Vec3 rotate{ 0.4f,1.43f,-0.8f };
+	MyMatrix4x4 rotateXMa=MakeMatrix::RotateX(rotate.x);
+	MyMatrix4x4 rotateYMa=MakeMatrix::RotateY(rotate.y);
+	MyMatrix4x4 rotateZMa=MakeMatrix::RotateZ(rotate.z);
+	MyMatrix4x4 ratateXYZMa=MakeMatrix::RotateXYZ(rotateXMa, rotateYMa, rotateZMa);
 
 	constexpr int kRowHeight=20;
 
@@ -39,9 +33,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::GetHitKeyStateAll(keys);
 
 
-		ScreenPrintVector3(0, 0, transfomed, ": Transformed");
-		ScreenPrintMatrix("Translate Matrix", 0, kRowHeight, translateMa);
-		ScreenPrintMatrix("scale Matrix",0, kRowHeight * 6, scaleMa);
+		ScreenPrintMatrix("RotateX",0, 0, rotateXMa);
+		ScreenPrintMatrix("RotateY", 0, kRowHeight * 5, rotateYMa);
+		ScreenPrintMatrix("RotateZ", 0, kRowHeight * 10, rotateZMa);
+		ScreenPrintMatrix("RotateXYZ", 0, kRowHeight * 15, ratateXYZMa);
 
 		// フレームの終了
 		Novice::EndFrame();

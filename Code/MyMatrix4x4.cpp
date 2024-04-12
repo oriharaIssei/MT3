@@ -1,6 +1,7 @@
 #include "MyMatrix4x4.h"
 
 #include "assert.h"
+#include "cmath"
 
 MyMatrix4x4 MyMatrix4x4::operator+(const MyMatrix4x4 &another) const {
 	MyMatrix4x4 result;
@@ -322,6 +323,42 @@ MyMatrix4x4 MakeMatrix::Scale(const Vec3 &vec) {
 		0.0f, 0.0f,vec.z, 0.0f ,
 		0.0f, 0.0f, 0.0f, 1.0f
 		});
+}
+
+MyMatrix4x4 MakeMatrix::RotateX(const float &radian) {
+	return MyMatrix4x4({
+		01.0f,.0f,0.0f,0.0f,
+		0.0f,std::cosf(radian),std::sinf(radian),0.0f,
+		0.0f, -std::sinf(radian),std::cosf(radian),0.0f,
+		0.0f,0.0f,0.0f,1.0f
+		});
+}
+
+MyMatrix4x4 MakeMatrix::RotateY(const float &radian) {
+	return MyMatrix4x4({
+std::cosf(radian),0.0f,-std::sinf(radian),0.0f,
+0.0f,1.0f,0.0f,0.0f,
+std::sinf(radian),0.0f,std::cosf(radian),0.0f,
+0.0f,0.0f,0.0f,1.0f
+		});
+
+}
+
+MyMatrix4x4 MakeMatrix::RotateZ(const float &radian) {
+	return MyMatrix4x4({
+		std::cosf(radian),std::sinf(radian),0.0f,0.0f,
+		-std::sinf(radian),std::cosf(radian),0.0f,0.0f,
+		0.0f,0.0f,1.0f,0.0f,
+		0.0f,0.0f,0.0f,1.0f
+		});
+}
+
+MyMatrix4x4 MakeMatrix::RotateXYZ(const Vec3 &radian) {
+	return MakeMatrix::RotateX(radian.x) * MakeMatrix::RotateY(radian.y) * MakeMatrix::RotateZ(radian.z);
+}
+
+MyMatrix4x4 MakeMatrix::RotateXYZ(const MyMatrix4x4 &x, const MyMatrix4x4 &y, const MyMatrix4x4 &z) {
+	return x * y * z;
 }
 
 Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix) {

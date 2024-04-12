@@ -32,6 +32,11 @@ namespace MakeMatrix {
 	MyMatrix4x4 Identity();
 	MyMatrix4x4 Translate(const Vec3 &vec);
 	MyMatrix4x4 Scale(const Vec3 &vec);
+	MyMatrix4x4 RotateX(const float &radian);
+	MyMatrix4x4 RotateY(const float &radian);
+	MyMatrix4x4 RotateZ(const float &radian);
+	MyMatrix4x4 RotateXYZ(const Vec3 &radian);
+	MyMatrix4x4 RotateXYZ(const MyMatrix4x4 &x, const MyMatrix4x4 &y, const MyMatrix4x4 &z);
 }
 
 Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix);
