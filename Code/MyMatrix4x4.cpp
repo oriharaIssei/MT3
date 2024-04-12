@@ -361,6 +361,10 @@ MyMatrix4x4 MakeMatrix::RotateXYZ(const MyMatrix4x4 &x, const MyMatrix4x4 &y, co
 	return x * y * z;
 }
 
+MyMatrix4x4 MakeMatrix::Affine(const Vec3 &scale, const Vec3 &rotate, const Vec3 &translate) {
+	return MakeMatrix::Scale(scale) * MakeMatrix::RotateXYZ(rotate) * MakeMatrix::Translate(translate);
+}
+
 Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix) {
 	float result[4]={ 0.0f,0.0f,0.0f,0.0f };
 	float hcs[4]={ vec.x,vec.y,vec.z,1.0f };

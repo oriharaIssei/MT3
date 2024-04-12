@@ -37,6 +37,7 @@ namespace MakeMatrix {
 	MyMatrix4x4 RotateZ(const float &radian);
 	MyMatrix4x4 RotateXYZ(const Vec3 &radian);
 	MyMatrix4x4 RotateXYZ(const MyMatrix4x4 &x, const MyMatrix4x4 &y, const MyMatrix4x4 &z);
+	MyMatrix4x4 Affine(const Vec3 &scale, const Vec3 &rotate, const Vec3 &translate);
 }
 
 Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix);
