@@ -77,6 +77,14 @@ float Vec3::dot(const Vec3& another) {
 	return this->x * another.x + this->y * another.y + this->z * another.z;
 }
 
+Vec3 Vec3::Cross(const Vec3 &another) {
+	return Vec3(
+		y * another.z - z * another.y,
+		z * another.x - x * another.z,
+		x * another.y - y * another.x
+	);
+}
+
 void ScreenPrintVector3(int x, int y, const Vec3& vector, const char* label) {
 	static constexpr int kColWidth = 60;
 	Novice::ScreenPrintf(x , y, "%.02f", vector.x);
