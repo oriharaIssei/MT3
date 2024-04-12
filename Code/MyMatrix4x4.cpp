@@ -296,13 +296,46 @@ MyMatrix4x4 MyMatrix4x4::Inverse() const {
 	return inverse;
 }
 
-MyMatrix4x4 MakeIdentity4x4() {
-	return MyMatrix4x4(
-		{ 1.0f, 0.0f, 0.0f, 0.0f ,
+
+MyMatrix4x4 MakeMatrix::Identity() {
+	return MyMatrix4x4({
+		1.0f, 0.0f, 0.0f, 0.0f ,
 		0.0f, 1.0f, 0.0f, 0.0f ,
 		0.0f, 0.0f, 1.0f, 0.0f ,
-		0.0f, 0.0f, 0.0f, 1.0f }
-	);
+		0.0f, 0.0f, 0.0f, 1.0f
+		});
+}
+
+MyMatrix4x4 MakeMatrix::Translate(const Vec3 &vec) {
+	return MyMatrix4x4({
+		1.0f, 0.0f, 0.0f, 0.0f ,
+		0.0f, 1.0f, 0.0f, 0.0f ,
+		0.0f, 0.0f, 1.0f, 0.0f ,
+		vec.x,vec.y,vec.z, 1.0f
+		});
+}
+
+MyMatrix4x4 MakeMatrix::Scale(const Vec3 &vec) {
+	return MyMatrix4x4({
+		vec.x, 0.0f, 0.0f, 0.0f ,
+		0.0f, vec.y, 0.0f, 0.0f ,
+		0.0f, 0.0f,vec.z, 0.0f ,
+		0.0f, 0.0f, 0.0f, 1.0f
+		});
+}
+
+Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix) {
+	float result[4]={ 0.0f,0.0f,0.0f,0.0f };
+	float hcs[4]={ vec.x,vec.y,vec.z,1.0f };
+
+	for(int r=0; r < 4; r++) {
+		for(int c=0; c < 4; c++) {
+			result[r]+=hcs[c] * matrix[c][r];
+		}
+	}
+
+	assert(result[3] != 0.0f);
+	return Vec3(result[0] / result[3], result[1] / result[3], result[2] / result[3]);
 }
 
 void ScreenPrintMatrix(const char *label, int x, int y, const MyMatrix4x4 &matrix) {

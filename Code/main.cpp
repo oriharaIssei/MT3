@@ -9,30 +9,21 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle, 1280, 720);
+	//==============初期化====================
+	MyMatrix4x4 translateMa=MakeMatrix::Translate({ 4.1f,2.6f,0.8f });
+	MyMatrix4x4 scaleMa=MakeMatrix::Scale({ 1.5f,5.2f,7.3f });
 
-	MyMatrix4x4 m1={
-		3.2f,0.7f,9.6f,4.4f,
-		5.5f,1.3f,7.8f,2.1f,
-		6.9f,8.0f,2.6f,1.0f,
-		0.5f,7.2f,5.1f,3.3f
-	};
-	MyMatrix4x4 m2={
-		4.1f,6.5f,3.3f,2.2f,
-		8.8f,0.6f,9.9f,7.7f,
-		1.1f,5.5f,6.6f,0.0f,
-		3.3f,9.9f,8.8f,2.2f
+	Vec3 point={ 2.3f,3.8f,1.4f };
+	MyMatrix4x4 transformMa={
+		1.0f,2.0f,3.0f,4.0f,
+		3.0f,1.0f,1.0f,2.0f,
+		1.0f,4.0f,2.0f,3.0f,
+		2.0f,2.0f,1.0f,3.0f
 	};
 
-	MyMatrix4x4 add=m1 + m2;
-	MyMatrix4x4 multiply=m1 * m2;
-	MyMatrix4x4 sub=m1 - m2;
-	MyMatrix4x4 inverse[2]={ m1.Inverse(),m2.Inverse() };
-	MyMatrix4x4 transpose[2]={ m1.Transpose(),m2.Transpose() };
-	MyMatrix4x4 identity=MakeIdentity4x4();
+	Vec3 transfomed=Transform(point, transformMa);
 
 	constexpr int kRowHeight=20;
-	constexpr int kColWidht=60;
-
 
 	// キー入力結果を受け取る箱
 	char keys[256]={ 0 };
@@ -47,14 +38,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		memcpy(preKeys, keys, 256);
 		Novice::GetHitKeyStateAll(keys);
 
-		ScreenPrintMatrix("Add",0, 0, add);
-		ScreenPrintMatrix("Sub", 0, kRowHeight * 5, sub);
-		ScreenPrintMatrix("Multiply", 0, kRowHeight * 10, multiply);
-		ScreenPrintMatrix("inverse [0]", 0, kRowHeight * 15, inverse[0]);
-		ScreenPrintMatrix("inverse [1]", 0, kRowHeight * 20, inverse[1]);
-		ScreenPrintMatrix("transpose[0]", kColWidht * 5, 0, transpose[0]);
-		ScreenPrintMatrix("transpose[1]", kColWidht * 5, kRowHeight * 5, transpose[1]);
-		ScreenPrintMatrix("identity", kColWidht * 5, kRowHeight * 10, identity);
+
+		ScreenPrintVector3(0, 0, transfomed, ": Transformed");
+		ScreenPrintMatrix("Translate Matrix", 0, kRowHeight, translateMa);
+		ScreenPrintMatrix("scale Matrix",0, kRowHeight * 6, scaleMa);
 
 		// フレームの終了
 		Novice::EndFrame();

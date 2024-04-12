@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Novice.h"
+#include "Vec3.h"
 
 struct MyMatrix4x4 {
 	float m[4][4];
@@ -27,5 +28,12 @@ struct MyMatrix4x4 {
 	MyMatrix4x4 Inverse()const;
 };
 
-MyMatrix4x4 MakeIdentity4x4();
+namespace MakeMatrix {
+	MyMatrix4x4 Identity();
+	MyMatrix4x4 Translate(const Vec3 &vec);
+	MyMatrix4x4 Scale(const Vec3 &vec);
+}
+
+Vec3 Transform(const Vec3 &vec, const MyMatrix4x4 &matrix);
+
 void ScreenPrintMatrix(const char* label,int x, int y, const MyMatrix4x4& matrix);
