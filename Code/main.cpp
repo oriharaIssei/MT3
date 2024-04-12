@@ -9,6 +9,7 @@ struct Triangle {
 	Vec3 vert[3];
 	Vec3 scVert[3];
 	MyMatrix4x4 worldMa;
+	bool isFront();
 };
 
 // Windowsアプリでのエントリーポイント(main関数)
@@ -94,22 +95,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		Novice::DrawTriangle(
-			static_cast<int>(triangle.scVert[0].x),
-			static_cast<int>(triangle.scVert[0].y),
-			static_cast<int>(triangle.scVert[1].x),
-			static_cast<int>(triangle.scVert[1].y),
-			static_cast<int>(triangle.scVert[2].x),
-			static_cast<int>(triangle.scVert[2].y),
-			RED,
-			kFillModeSolid
-		);
-
-		ScreenPrintVector3(
-			0, 0,
-			cross,
-			"Cross"
-		);
+		if(triangle.isFront()) {
+			Novice::DrawTriangle(
+				static_cast<int>(triangle.scVert[0].x),
+				static_cast<int>(triangle.scVert[0].y),
+				static_cast<int>(triangle.scVert[1].x),
+				static_cast<int>(triangle.scVert[1].y),
+				static_cast<int>(triangle.scVert[2].x),
+				static_cast<int>(triangle.scVert[2].y),
+				RED,
+				kFillModeSolid
+			);
+		}
 
 		///
 		/// ↑描画処理ここまで
@@ -127,4 +124,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// ライブラリの終了
 	Novice::Finalize();
 	return 0;
+}
+bool Triangle::isFront() {
+	if(Vec3(scVert[0] - scVert[1]).Cross(scVert[1] - scVert[2]).z > 0.0f) {
+		return true;
+	}
+	return false;
 }
