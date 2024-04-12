@@ -23,6 +23,7 @@ struct Vec3 {
 	float dot(const Vec3& another);
 	float length();
 	Vec3 Normalize();
+	Vec3 Cross(const Vec3 &another);
 };
 
 void ScreenPrintVector3(int x, int y, const Vec3& vector, const char* label);
