@@ -11,19 +11,21 @@ struct Vec3 {
 	///
 	Vec3& operator=(const Vec3& another);
 
-	Vec3 operator+(const Vec3& another);
+	Vec3 operator+(const Vec3& another)const;
 	Vec3& operator+=(const Vec3& another);
 
-	Vec3 operator-(const Vec3& another);
+	Vec3 operator-(const Vec3& another)const;
 	Vec3& operator-=(const Vec3& another);
 
-	Vec3 operator*(const float& scalar);
+	Vec3 operator*(const float& scalar)const;
 	Vec3& operator*=(const Vec3& another);
 
-	float dot(const Vec3& another);
-	float length();
-	Vec3 Normalize();
-	Vec3 Cross(const Vec3 &another);
+	float dot(const Vec3& another)const;
+	float length()const;
+	Vec3 Normalize()const;
+	Vec3 Cross(const Vec3 &another)const;
 };
+
+Vec3 Projection(const Vec3 &v1, const Vec3 &v2);
 
 void ScreenPrintVector3(int x, int y, const Vec3& vector, const char* label);
