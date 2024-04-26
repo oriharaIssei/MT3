@@ -5,30 +5,25 @@
 #include <stdint.h>
 
 #include <MyMatrix4x4.h>
-#include <Lines.h>
 #include <Vec3.h>
+
+#include <Camera.h>
+#include <Lines.h>
 
 const char kWindowTitle[] = "LE2A_08_オリハライッセイ_MT3";
 
-
-struct TransformData {
-	Vec3 scale;
-	Vec3 rotate;
-	Vec3 translate;
-};
-struct Camera {
-	TransformData transformData;
-	MyMatrix4x4 vpMa;
-};
 struct Sphere {
-	TransformData transformData;
+	Transform transformData;
 	float radius;
+	unsigned int color;
 	MyMatrix4x4 worldMa;
 };
 
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
 void DrawSegment(const Segment p0, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
 void DrawSphere(const Sphere &sphere, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa, uint32_t color);
+
+bool CollisionSphere(const Sphere &a, const Sphere &b);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -41,40 +36,37 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	//==============初期化==================
 	Camera camera;
-	camera.transformData.scale = { 1.0f,1.0f,1.0f };
-	camera.transformData.rotate = { 0.26f,0.0f,0.0f };
-	camera.transformData.translate = { 0.0f,1.9f,-6.49f };
+	camera.transform_.scale = { 1.0f,1.0f,1.0f };
+	camera.transform_.rotate = { 0.26f,0.0f,0.0f };
+	camera.transform_.translate = { 0.0f,1.9f,-6.49f };
 
 	MyMatrix4x4 projectionMa = MakeMatrix::PerspectiveFov(0.45f, kWindowWidth / kWindowHeight, 0.1f, 100.0f);
-	camera.vpMa = MakeMatrix::Affine(
-		camera.transformData.scale,
-		camera.transformData.rotate,
-		camera.transformData.translate
+	camera.vpMa_ = MakeMatrix::Affine(
+		camera.transform_.scale,
+		camera.transform_.rotate,
+		camera.transform_.translate
 	) * projectionMa;
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f, 0.0f, kWindowWidth, kWindowHeight, 0.0f, 1.0f);
 
-	Segment segment { {-2.0f,-1.0f,0.0f},{3.0f,2.0f,2.0f} };
-	Vec3 point { -1.5f,0.6f,0.6f };
-
-	Vec3 project = Projection(point - segment.origin, segment.diff);
-	Vec3 closestPoint = ClosestPoint(point, segment);
-
-	Sphere pointSphere { {
-			{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},point},0.01f
+	Sphere sphereA { {
+		{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,5.0f,1.0f}
+		},
+		5.0f,
+		WHITE
 	};
-	pointSphere.worldMa = MakeMatrix::Affine(
-		pointSphere.transformData.scale,
-		pointSphere.transformData.rotate,
-		pointSphere.transformData.translate
+	sphereA.worldMa = MakeMatrix::Affine(
+		sphereA.transformData.scale,
+		sphereA.transformData.rotate,
+		sphereA.transformData.translate
 	);
-	Sphere closestSphere { {
-			{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},closestPoint},0.01f
+	Sphere sphereB { {
+		{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{30.0f,2.0f,0.0f}},0.01f,WHITE
 	};
-	closestSphere.worldMa = MakeMatrix::Affine(
-		closestSphere.transformData.scale,
-		closestSphere.transformData.rotate,
-		closestSphere.transformData.translate
+	sphereB.worldMa = MakeMatrix::Affine(
+		sphereB.transformData.scale,
+		sphereB.transformData.rotate,
+		sphereB.transformData.translate
 	);
 
 	// キー入力結果を受け取る箱
@@ -95,42 +87,40 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		ImGui::Begin("Camera");
-		ImGui::DragFloat3("Translate", &camera.transformData.translate.x, 0.01f);
-		ImGui::DragFloat3("Rotate", &camera.transformData.rotate.x, 0.01f);
+		ImGui::DragFloat3("Translate", &camera.transform_.translate.x, 0.01f);
+		ImGui::DragFloat3("Rotate", &camera.transform_.rotate.x, 0.01f);
 		ImGui::End();
 
-		ImGui::Begin("Window");
-		ImGui::DragFloat3("Point", &point.x,0.001f);
-		ImGui::DragFloat3("Segment Origin", &segment.origin.x, 0.001f);
-		ImGui::DragFloat3("Segment Diff", &segment.diff.x, 0.001f);
-		
-		/*-------再計算-------*/
-		project = Projection(point - segment.origin, segment.diff);
-		closestPoint = ClosestPoint(point, segment);
-
-		ImGui::Text(" Project \n %f , %f , %f ", project.x, project.y, project.z);
-		ImGui::Text(" ClosestPoint \n %f , %f , %f ", closestPoint.x, closestPoint.y, closestPoint.z);
+		ImGui::Begin("Sphere");
+		ImGui::DragFloat3("A_Translate", &sphereA.transformData.translate.x, 0.01f);
+		ImGui::DragFloat("A_Radius", &sphereA.radius, 0.01f);
+		ImGui::DragFloat3("B_Translate", &sphereB.transformData.translate.x, 0.01f);
+		ImGui::DragFloat("B_Radius", &sphereB.radius, 0.01f);
 		ImGui::End();
 
-		camera.vpMa = MakeMatrix::Affine(
-			camera.transformData.scale,
-			camera.transformData.rotate,
-			camera.transformData.translate
+		camera.vpMa_ = MakeMatrix::Affine(
+			camera.transform_.scale,
+			camera.transform_.rotate,
+			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		closestSphere.transformData.translate = closestPoint;
-		pointSphere.transformData.translate = point;
+		sphereA.worldMa = MakeMatrix::Affine(
+			sphereA.transformData.scale,
+			sphereA.transformData.rotate,
+			sphereA.transformData.translate
+		);
 
-		closestSphere.worldMa = MakeMatrix::Affine(
-			closestSphere.transformData.scale,
-			closestSphere.transformData.rotate,
-			closestSphere.transformData.translate
+		sphereB.worldMa = MakeMatrix::Affine(
+			sphereB.transformData.scale,
+			sphereB.transformData.rotate,
+			sphereB.transformData.translate
 		);
-		pointSphere.worldMa = MakeMatrix::Affine(
-			pointSphere.transformData.scale,
-			pointSphere.transformData.rotate,
-			pointSphere.transformData.translate
-		);
+
+		if(CollisionSphere(sphereA, sphereB)) {
+			sphereA.color = RED;
+		} else {
+			sphereA.color = WHITE;
+		}
 
 		///
 		/// ↑更新処理ここまで
@@ -140,10 +130,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(camera.vpMa, viewPortMa);
-		DrawSegment(segment, camera.vpMa, viewPortMa);
-		DrawSphere(pointSphere, camera.vpMa, viewPortMa, BLACK);
-		DrawSphere(closestSphere, camera.vpMa, viewPortMa, RED);
+		DrawGrid(camera.vpMa_, viewPortMa);
+		DrawSphere(sphereA, camera.vpMa_, viewPortMa, sphereA.color);
+		DrawSphere(sphereB, camera.vpMa_, viewPortMa, sphereB.color);
 
 		///
 		/// ↑描画処理ここまで
@@ -162,6 +151,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	Novice::Finalize();
 	return 0;
 }
+
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
 	// Grid の半分の幅
 	constexpr float kGridHalfWidth = 2.0f;
@@ -177,12 +167,12 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 		Vec3 endPos = { -kGridHalfWidth + kGridEvery * xIndex, 0.0f,  kGridHalfWidth };
 
 		// 始点と終点をビュープロジェクション変換
-		Vec3 ndcStartPos = Transform(startPos, viewProjectionMa);
-		Vec3 ndcEndPos = Transform(endPos, viewProjectionMa);
+		Vec3 ndcStartPos = TransformVector(startPos, viewProjectionMa);
+		Vec3 ndcEndPos = TransformVector(endPos, viewProjectionMa);
 
 		// NDCからスクリーン座標へ変換
-		Vec3 scStartPos = Transform(ndcStartPos, viewPortMa);
-		Vec3 scEndPos = Transform(ndcEndPos, viewPortMa);
+		Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
+		Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
 
 		// 線を描画
 		Novice::DrawLine(
@@ -198,12 +188,12 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 		Vec3 endPos = { -kGridHalfWidth ,0.0f , -kGridHalfWidth + kGridEvery * zIndex };
 
 		// 始点と終点をビュープロジェクション変換
-		Vec3 ndcStartPos = Transform(startPos, viewProjectionMa);
-		Vec3 ndcEndPos = Transform(endPos, viewProjectionMa);
+		Vec3 ndcStartPos = TransformVector(startPos, viewProjectionMa);
+		Vec3 ndcEndPos = TransformVector(endPos, viewProjectionMa);
 
 		// NDCからスクリーン座標へ変換
-		Vec3 scStartPos = Transform(ndcStartPos, viewPortMa);
-		Vec3 scEndPos = Transform(ndcEndPos, viewPortMa);
+		Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
+		Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
 
 		// 線を描画
 		Novice::DrawLine(
@@ -215,11 +205,11 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 }
 
 void DrawSegment(const Segment seg, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
-	Vec3 ndcStartPos = Transform(seg.origin, viewProjectionMa);
-	Vec3 ndcEndPos = Transform(seg.origin + seg.diff, viewProjectionMa);
+	Vec3 ndcStartPos = TransformVector(seg.origin, viewProjectionMa);
+	Vec3 ndcEndPos = TransformVector(seg.origin + seg.diff, viewProjectionMa);
 
-	Vec3 scStartPos = Transform(ndcStartPos, viewPortMa);
-	Vec3 scEndPos = Transform(ndcEndPos, viewPortMa);
+	Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
+	Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
 
 	Novice::DrawLine(
 		static_cast<int>(scStartPos.x),
@@ -250,13 +240,13 @@ void DrawSphere(const Sphere &sphere, const MyMatrix4x4 &viewProjectionMa, const
 			c = Vec3({ std::cosf(lat) * std::cosf(lon + kLonEvery),std::sinf(lat),std::cosf(lat) * std::sinf(lon + kLonEvery) }) * sphere.radius;
 
 			// ndc
-			pos[0] = Transform(a, sphere.worldMa * viewProjectionMa);
-			pos[1] = Transform(b, sphere.worldMa * viewProjectionMa);
-			pos[2] = Transform(c, sphere.worldMa * viewProjectionMa);
+			pos[0] = TransformVector(a, sphere.worldMa * viewProjectionMa);
+			pos[1] = TransformVector(b, sphere.worldMa * viewProjectionMa);
+			pos[2] = TransformVector(c, sphere.worldMa * viewProjectionMa);
 			// screen
-			pos[0] = Transform(pos[0], viewPortMa);
-			pos[1] = Transform(pos[1], viewPortMa);
-			pos[2] = Transform(pos[2], viewPortMa);
+			pos[0] = TransformVector(pos[0], viewPortMa);
+			pos[1] = TransformVector(pos[1], viewPortMa);
+			pos[2] = TransformVector(pos[2], viewPortMa);
 
 			// ab
 			Novice::DrawLine(
@@ -276,4 +266,14 @@ void DrawSphere(const Sphere &sphere, const MyMatrix4x4 &viewProjectionMa, const
 			);
 		}
 	}
+}
+
+bool CollisionSphere(const Sphere &a, const Sphere &b) {
+	Vec3 worldPosA = TransformVector({ 0.0f,0.0f,0.0f }, a.worldMa);
+	Vec3 worldPosB = TransformVector({ 0.0f,0.0f,0.0f }, b.worldMa);
+	if((worldPosA - worldPosB).length() < a.radius + b.radius) {
+		return true;
+	}
+
+	return false;
 }
