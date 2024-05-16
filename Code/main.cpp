@@ -18,12 +18,22 @@ struct Sphere {
 	unsigned int color;
 	MyMatrix4x4 worldMa;
 };
+Vec3 Perpendicular(const Vec3 &vec);
+struct Plane {
+	Vec3 normal;
+	Vec3 points[4];
+	Vec3 center;
+	float distance;
+	void UpdatePoints(const MyMatrix4x4 &viewProj, const MyMatrix4x4 &viewPort);
+	void Draw(uint32_t color);
+};
 
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
 void DrawSegment(const Segment p0, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
 void DrawSphere(const Sphere &sphere, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa, uint32_t color);
 
 bool CollisionSphere(const Sphere &a, const Sphere &b);
+bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -49,25 +59,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f, 0.0f, kWindowWidth, kWindowHeight, 0.0f, 1.0f);
 
-	Sphere sphereA { {
+	Sphere sphere { {
 		{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,5.0f,1.0f}
 		},
 		5.0f,
 		WHITE
 	};
-	sphereA.worldMa = MakeMatrix::Affine(
-		sphereA.transformData.scale,
-		sphereA.transformData.rotate,
-		sphereA.transformData.translate
+	sphere.worldMa = MakeMatrix::Affine(
+		sphere.transformData.scale,
+		sphere.transformData.rotate,
+		sphere.transformData.translate
 	);
-	Sphere sphereB { {
-		{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{30.0f,2.0f,0.0f}},0.01f,WHITE
-	};
-	sphereB.worldMa = MakeMatrix::Affine(
-		sphereB.transformData.scale,
-		sphereB.transformData.rotate,
-		sphereB.transformData.translate
-	);
+
+	Plane plane;
+	plane.normal = { 1.0f,1.0f,1.0f };
+	plane.distance = 10.0f;
+	plane.center = { 1.0f,1.0f,1.0f };
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -92,10 +99,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::End();
 
 		ImGui::Begin("Sphere");
-		ImGui::DragFloat3("A_Translate", &sphereA.transformData.translate.x, 0.01f);
-		ImGui::DragFloat("A_Radius", &sphereA.radius, 0.01f);
-		ImGui::DragFloat3("B_Translate", &sphereB.transformData.translate.x, 0.01f);
-		ImGui::DragFloat("B_Radius", &sphereB.radius, 0.01f);
+		ImGui::DragFloat3("A_Translate", &sphere.transformData.translate.x, 0.01f);
+		ImGui::DragFloat("A_Radius", &sphere.radius, 0.01f);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -104,22 +109,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		sphereA.worldMa = MakeMatrix::Affine(
-			sphereA.transformData.scale,
-			sphereA.transformData.rotate,
-			sphereA.transformData.translate
+		sphere.worldMa = MakeMatrix::Affine(
+			sphere.transformData.scale,
+			sphere.transformData.rotate,
+			sphere.transformData.translate
 		);
 
-		sphereB.worldMa = MakeMatrix::Affine(
-			sphereB.transformData.scale,
-			sphereB.transformData.rotate,
-			sphereB.transformData.translate
-		);
-
-		if(CollisionSphere(sphereA, sphereB)) {
-			sphereA.color = RED;
+		plane.UpdatePoints(camera.vpMa_, viewPortMa);
+		if(CollisionSphere2Plane(sphere, plane)) {
+			sphere.color = 0xff0000ff;
 		} else {
-			sphereA.color = WHITE;
+			sphere.color = 0xffffffff;
 		}
 
 		///
@@ -131,8 +131,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(camera.vpMa_, viewPortMa);
-		DrawSphere(sphereA, camera.vpMa_, viewPortMa, sphereA.color);
-		DrawSphere(sphereB, camera.vpMa_, viewPortMa, sphereB.color);
+		plane.Draw(BLACK);
+		DrawSphere(sphere, camera.vpMa_, viewPortMa, sphere.color);
+
 
 		///
 		/// ↑描画処理ここまで
@@ -150,6 +151,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	// ライブラリの終了
 	Novice::Finalize();
 	return 0;
+}
+
+Vec3 Perpendicular(const Vec3 &vec) {
+	if(vec.x != 0.0f || vec.y != 0.0f) {
+		return Vec3(-vec.y, vec.x, 0.0f);
+	}
+	return Vec3(0.0f, -vec.z, vec.y);
 }
 
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
@@ -235,9 +243,20 @@ void DrawSphere(const Sphere &sphere, const MyMatrix4x4 &viewProjectionMa, const
 		for(uint32_t lonIndex = 0; lonIndex < kSubDivision; ++lonIndex) {
 			float lon = lonIndex * kLonEvery;
 			Vec3 a, b, c;
-			a = Vec3({ std::cosf(lat) * std::cosf(lon),std::sinf(lat),std::cosf(lat) * std::sinf(lon) }) * sphere.radius;
-			b = Vec3({ std::cosf(lat + kLatEvery) * std::cosf(lon),std::sinf(lat + kLatEvery),std::cosf(lat + kLatEvery) * std::sinf(lon) }) * sphere.radius;
-			c = Vec3({ std::cosf(lat) * std::cosf(lon + kLonEvery),std::sinf(lat),std::cosf(lat) * std::sinf(lon + kLonEvery) }) * sphere.radius;
+			a = Vec3({
+				std::cosf(lat) * std::cosf(lon),
+				std::sinf(lat),
+				std::cosf(lat) * std::sinf(lon) }) * sphere.radius;
+
+			b = Vec3({
+				std::cosf(lat + kLatEvery) * std::cosf(lon),
+				std::sinf(lat + kLatEvery),
+				std::cosf(lat + kLatEvery) * std::sinf(lon) }) * sphere.radius;
+
+			c = Vec3({
+				std::cosf(lat) * std::cosf(lon + kLonEvery),
+				std::sinf(lat),
+				std::cosf(lat) * std::sinf(lon + kLonEvery) }) * sphere.radius;
 
 			// ndc
 			pos[0] = TransformVector(a, sphere.worldMa * viewProjectionMa);
@@ -276,4 +295,73 @@ bool CollisionSphere(const Sphere &a, const Sphere &b) {
 	}
 
 	return false;
+}
+
+bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane) {
+	float distance = (sphere.transformData.translate.dot(plane.normal.Normalize())) - plane.distance;
+
+	if(std::abs(distance) <= sphere.radius) {
+		return true;
+	}
+
+	return false;
+}
+
+void Plane::Draw(uint32_t color) {
+
+	Novice::DrawLine(
+		static_cast<int>(points[0].x),
+		static_cast<int>(points[0].y),
+		static_cast<int>(points[3].x),
+		static_cast<int>(points[3].y),
+		RED
+	);
+	Novice::DrawLine(
+		static_cast<int>(points[0].x),
+		static_cast<int>(points[0].y),
+		static_cast<int>(points[2].x),
+		static_cast<int>(points[2].y),
+		WHITE
+	);
+	Novice::DrawLine(
+		static_cast<int>(points[1].x),
+		static_cast<int>(points[1].y),
+		static_cast<int>(points[2].x),
+		static_cast<int>(points[2].y),
+		GREEN
+	);
+
+	Novice::DrawLine(
+		static_cast<int>(points[3].x),
+		static_cast<int>(points[3].y),
+		static_cast<int>(points[1].x),
+		static_cast<int>(points[1].y),
+		BLACK
+	);
+	color;
+}
+
+void Plane::UpdatePoints(const MyMatrix4x4 &viewProj, const MyMatrix4x4 &viewPort) {
+
+	ImGui::Begin("Plane");
+	ImGui::SliderFloat3("Normal ", &this->normal.x, -1.0f, 1.0f);
+	ImGui::DragFloat(" Distance ", &this->distance, 0.1f);
+	this->normal = this->normal.Normalize();
+	ImGui::End();
+
+	center = this->normal * this->distance;
+	Vec3 perpendiculars[4];
+
+	perpendiculars[0] = Perpendicular(this->normal).Normalize();
+	perpendiculars[1] = -perpendiculars[0];
+	perpendiculars[2] = this->normal.Cross(perpendiculars[0]);
+	perpendiculars[3] = -perpendiculars[2];
+
+	Vec3 extend;
+	Vec3 point;
+	for(int32_t i = 0; i < 4; ++i) {
+		extend = perpendiculars[i] * 2.0f;
+		point = center + extend;
+		points[i] = TransformVector(TransformVector(point, viewProj), viewPort);
+	}
 }
