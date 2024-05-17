@@ -46,10 +46,19 @@
     <ClCompile Include="Code\MyMath\Vec3.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Lines.cpp">
+    <ClCompile Include="Code\Primitive\Lines.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
     <ClCompile Include="Code\Camera.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Primitive\Plane.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\MyMath\myMath.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Primitive\Sphere.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
   </ItemGroup>
@@ -124,10 +133,13 @@
     <ClInclude Include="C:\KamataEngine\DirectXGame\base\StringUtility.h">
       <Filter>KamataEngine\Include</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Lines.h" />
+    <ClInclude Include="Code\Primitive\Lines.h" />
     <ClInclude Include="Code\MyMath\MyMatrix4x4.h" />
     <ClInclude Include="Code\MyMath\Vec3.h" />
     <ClInclude Include="Code\MyMath\Transform.h" />
     <ClInclude Include="Code\Camera.h" />
+    <ClInclude Include="Code\Primitive\Plane.h" />
+    <ClInclude Include="Code\MyMath\myMath.h" />
+    <ClInclude Include="Code\Primitive\Sphere.h" />
   </ItemGroup>
 </Project>
