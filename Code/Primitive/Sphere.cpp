@@ -7,15 +7,15 @@
 
 void Sphere::Draw(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
 	constexpr uint32_t kSubDivision = 16;
-	// Œo“x•ªŠ„ 1 ‚Â•ª‚ÌŠp“x
+	// çµŒåº¦åˆ†å‰² 1 ã¤åˆ†ã®è§’åº¦
 	constexpr float kLatEvery = static_cast<float>(M_PI) / static_cast<float>(kSubDivision);
-	// ˆÜ“x•ªŠ„ 1 ‚Â•ª‚ÌŠp“x
+	// ç·¯åº¦åˆ†å‰² 1 ã¤åˆ†ã®è§’åº¦
 	constexpr float kLonEvery = static_cast<float>(M_PI) * 2.0f / static_cast<float>(kSubDivision);
 
 	Vec3 pos[3];
 
 	for(uint32_t latIndex = 0; latIndex < kSubDivision; ++latIndex) {
-		// -ƒÎ/2 ~ ƒÎ/2
+		// -Ï€/2 ~ Ï€/2
 		float lat = -static_cast<float>(M_PI) / 2.0f + (kLatEvery * latIndex);
 		for(uint32_t lonIndex = 0; lonIndex < kSubDivision; ++lonIndex) {
 			float lon = lonIndex * kLonEvery;

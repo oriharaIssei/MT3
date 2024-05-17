@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <Novice.h>
 
-void Plane::Draw(uint32_t color) {
+void Plane::Draw() {
 
 	Novice::DrawLine(
 		static_cast<int>(points[0].x),
@@ -36,7 +36,6 @@ void Plane::Draw(uint32_t color) {
 		static_cast<int>(points[1].y),
 		BLACK
 	);
-	color;
 }
 
 void Plane::UpdatePoints(const MyMatrix4x4 &viewProj, const MyMatrix4x4 &viewPort) {

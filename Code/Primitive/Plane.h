@@ -10,5 +10,5 @@ struct Plane {
 	Vec3 center;
 	float distance;
 	void UpdatePoints(const MyMatrix4x4 &viewProj, const MyMatrix4x4 &viewPort);
-	void Draw(uint32_t color);
+	void Draw();
 };

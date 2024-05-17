@@ -16,15 +16,11 @@
 
 const char kWindowTitle[] = "LE2A_08_オリハライッセイ_MT3";
 
-
-Vec3 Perpendicular(const Vec3 &vec);
-
-
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
-void DrawSegment(const Segment p0, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
 
 bool CollisionSphere(const Sphere &a, const Sphere &b);
 bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane);
+bool CollisionPlaneSegment(const Plane &plane, const Segment &seg);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -54,6 +50,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	plane.normal = { 1.0f,1.0f,1.0f };
 	plane.distance = 10.0f;
 	plane.center = { 1.0f,1.0f,1.0f };
+
+	Segment seg;
+	seg.origin = { 0.0f,0.0f,0.0f };
+	seg.diff = { 2.0f,2.0f,2.0f };
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -86,6 +86,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 		plane.UpdatePoints(camera.vpMa_, viewPortMa);
 
+		if(CollisionPlaneSegment(plane, seg)) {
+			seg.color = RED;
+		} else {
+			seg.color = WHITE;
+		}
+
 		///
 		/// ↑更新処理ここまで
 		///
@@ -95,7 +101,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(camera.vpMa_, viewPortMa);
-		plane.Draw(BLACK);
+		plane.Draw();
+		seg.Draw(camera.vpMa_, viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -168,22 +175,6 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 	}
 }
 
-void DrawSegment(const Segment seg, const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
-	Vec3 ndcStartPos = TransformVector(seg.origin, viewProjectionMa);
-	Vec3 ndcEndPos = TransformVector(seg.origin + seg.diff, viewProjectionMa);
-
-	Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
-	Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
-
-	Novice::DrawLine(
-		static_cast<int>(scStartPos.x),
-		static_cast<int>(scStartPos.y),
-		static_cast<int>(scEndPos.x),
-		static_cast<int>(scEndPos.y),
-		WHITE
-	);
-}
-
 bool CollisionSphere(const Sphere &a, const Sphere &b) {
 	Vec3 worldPosA = TransformVector({ 0.0f,0.0f,0.0f }, a.worldMa);
 	Vec3 worldPosB = TransformVector({ 0.0f,0.0f,0.0f }, b.worldMa);
@@ -202,4 +193,19 @@ bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane) {
 	}
 
 	return false;
+}
+
+bool CollisionPlaneSegment(const Plane &plane, const Segment &seg) {
+	float dot = plane.normal.dot(seg.diff);
+	if(dot == 0.0f) {
+		return false;
+	}
+
+	float t = (plane.distance - (seg.origin.dot(plane.normal))) / dot;
+
+	if(t <= -1 || t >= 2) {
+		return false;
+	}
+
+	return true;
 }
