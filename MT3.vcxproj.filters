@@ -61,6 +61,9 @@
     <ClCompile Include="Code\Primitive\Sphere.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Primitive\Triangle.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\KamataEngine\DirectXGame\audio\Audio.h">
@@ -141,5 +144,6 @@
     <ClInclude Include="Code\Primitive\Plane.h" />
     <ClInclude Include="Code\MyMath\myMath.h" />
     <ClInclude Include="Code\Primitive\Sphere.h" />
+    <ClInclude Include="Code\Primitive\Triangle.h" />
   </ItemGroup>
 </Project>

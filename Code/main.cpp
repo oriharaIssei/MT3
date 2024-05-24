@@ -11,6 +11,7 @@
 #include <Lines.h>
 #include <Plane.h>
 #include <Sphere.h>
+#include <Triangle.h>
 
 #include <imgui.h>
 
@@ -21,6 +22,7 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 bool CollisionSphere(const Sphere &a, const Sphere &b);
 bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane);
 bool CollisionPlaneSegment(const Plane &plane, const Segment &seg);
+bool CollisionTriangleSegment(const Triangle &tri, const Segment &seg);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
@@ -46,14 +48,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f, 0.0f, kWindowWidth, kWindowHeight, 0.0f, 1.0f);
 
-	Plane plane;
-	plane.normal = { 1.0f,1.0f,1.0f };
-	plane.distance = 10.0f;
-	plane.center = { 1.0f,1.0f,1.0f };
+	Triangle triangle;
+	triangle.vert[0] = { 0,1,0 };
+	triangle.vert[1] = { 1,0,0 };
+	triangle.vert[2] = { -1,0,0 };
 
 	Segment seg;
 	seg.origin = { 0.0f,0.0f,0.0f };
 	seg.diff = { 2.0f,2.0f,2.0f };
+	seg.color = BLACK;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = { 0 };
@@ -76,7 +79,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		ImGui::DragFloat3("Translate", &camera.transform_.translate.x, 0.01f);
 		ImGui::DragFloat3("Rotate", &camera.transform_.rotate.x, 0.01f);
 		ImGui::End();
+		ImGui::Begin("Triangle");
+		ImGui::DragFloat3("Translate", &triangle.transform.translate.x, 0.1f);
+		ImGui::DragFloat3("Rotate", &triangle.transform.rotate.x, 0.01f);
+		ImGui::End();
 
+		triangle.UpdateMatrix();
 
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
@@ -84,12 +92,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		plane.UpdatePoints(camera.vpMa_, viewPortMa);
-
-		if(CollisionPlaneSegment(plane, seg)) {
+		if(CollisionTriangleSegment(triangle, seg)) {
 			seg.color = RED;
 		} else {
-			seg.color = WHITE;
+			seg.color = BLACK;
 		}
 
 		///
@@ -101,7 +107,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		DrawGrid(camera.vpMa_, viewPortMa);
-		plane.Draw();
+		triangle.Draw(camera.vpMa_, viewPortMa);
 		seg.Draw(camera.vpMa_, viewPortMa);
 
 		///
@@ -208,4 +214,38 @@ bool CollisionPlaneSegment(const Plane &plane, const Segment &seg) {
 	}
 
 	return true;
+}
+
+bool CollisionTriangleSegment(const Triangle &tri, const Segment &seg) {
+	Vec3 transformedVerts[3] = {
+		TransformVector(tri.vert[0], tri.worldMat),
+		TransformVector(tri.vert[1], tri.worldMat),
+		TransformVector(tri.vert[2], tri.worldMat)
+	};
+
+	Vec3 triangleNormal = (transformedVerts[1] - transformedVerts[0]).Cross(transformedVerts[2] - transformedVerts[0]);
+
+	float dot = triangleNormal.dot(seg.diff);
+	if(fabs(dot) <= 0.00000001f) {
+		return false;
+	}
+
+	float t = (transformedVerts[0].dot(triangleNormal) - seg.origin.dot(triangleNormal)) / dot;
+
+	if(t < 0.0f || t > 1.0f) {
+		return false;
+	}
+
+	Vec3 p = seg.origin + (seg.diff * t);
+
+	Vec3 cross01 = (transformedVerts[1] - transformedVerts[0]).Cross(p - transformedVerts[0]);
+	Vec3 cross12 = (transformedVerts[2] - transformedVerts[1]).Cross(p - transformedVerts[1]);
+	Vec3 cross20 = (transformedVerts[0] - transformedVerts[2]).Cross(p - transformedVerts[2]);
+
+	if(cross01.dot(triangleNormal) >= 0.0f &&
+	   cross12.dot(triangleNormal) >= 0.0f &&
+	   cross20.dot(triangleNormal) >= 0.0f) {
+		return true;
+	}
+	return false;
 }
