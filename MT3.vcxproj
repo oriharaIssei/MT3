@@ -61,7 +61,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/Code/MyMath;$(ProjectDir)/Code;$(ProjectDir);C:\KamataEngine\DirectXGame\math;C:\KamataEngine\DirectXGame\2d;C:\KamataEngine\DirectXGame\3d;C:\KamataEngine\DirectXGame\audio;C:\KamataEngine\DirectXGame\base;C:\KamataEngine\DirectXGame\input;C:\KamataEngine\DirectXGame\scene;C:\KamataEngine\External\DirectXTex\include;C:\KamataEngine\External\imgui;C:\KamataEngine\Adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/Code/MyMath;$(ProjectDir)/Code/Primitive;$(ProjectDir)/Code;$(ProjectDir);C:\KamataEngine\DirectXGame\math;C:\KamataEngine\DirectXGame\2d;C:\KamataEngine\DirectXGame\3d;C:\KamataEngine\DirectXGame\audio;C:\KamataEngine\DirectXGame\base;C:\KamataEngine\DirectXGame\input;C:\KamataEngine\DirectXGame\scene;C:\KamataEngine\External\DirectXTex\include;C:\KamataEngine\External\imgui;C:\KamataEngine\Adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
@@ -86,7 +86,7 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/Code/MyMath;$(ProjectDir)/Code;$(ProjectDir);C:\KamataEngine\DirectXGame\math;C:\KamataEngine\DirectXGame\2d;C:\KamataEngine\DirectXGame\3d;C:\KamataEngine\DirectXGame\audio;C:\KamataEngine\DirectXGame\base;C:\KamataEngine\DirectXGame\input;C:\KamataEngine\DirectXGame\scene;C:\KamataEngine\External\DirectXTex\include;C:\KamataEngine\External\imgui;C:\KamataEngine\Adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/Code/MyMath;$(ProjectDir)/Code/Primitive;$(ProjectDir)/Code;$(ProjectDir);C:\KamataEngine\DirectXGame\math;C:\KamataEngine\DirectXGame\2d;C:\KamataEngine\DirectXGame\3d;C:\KamataEngine\DirectXGame\audio;C:\KamataEngine\DirectXGame\base;C:\KamataEngine\DirectXGame\input;C:\KamataEngine\DirectXGame\scene;C:\KamataEngine\External\DirectXTex\include;C:\KamataEngine\External\imgui;C:\KamataEngine\Adapter;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MinSpace</Optimization>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -116,10 +116,14 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClCompile Include="C:\KamataEngine\DirectXGame\2d\ImGuiManager.cpp" />
     <ClCompile Include="C:\KamataEngine\Adapter\Novice.cpp" />
     <ClCompile Include="Code\Camera.cpp" />
-    <ClCompile Include="Code\Lines.cpp" />
+    <ClCompile Include="Code\Primitive\Lines.cpp" />
     <ClCompile Include="Code\main.cpp" />
     <ClCompile Include="Code\MyMath\MyMatrix4x4.cpp" />
     <ClCompile Include="Code\MyMath\Vec3.cpp" />
+    <ClCompile Include="Code\MyMath\myMath.cpp" />
+    <ClCompile Include="Code\Primitive\Plane.cpp" />
+    <ClCompile Include="Code\Primitive\Sphere.cpp" />
+    <ClCompile Include="Code\Primitive\Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\KamataEngine\DirectXGame\base\StringUtility.h" />
@@ -149,10 +153,14 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClInclude Include="C:\KamataEngine\DirectXGame\scene\GameScene.h" />
     <ClInclude Include="C:\KamataEngine\Adapter\Novice.h" />
     <ClInclude Include="Code\Camera.h" />
-    <ClInclude Include="Code\Lines.h" />
+    <ClInclude Include="Code\Primitive\Lines.h" />
     <ClInclude Include="Code\MyMath\MyMatrix4x4.h" />
     <ClInclude Include="Code\MyMath\Transform.h" />
     <ClInclude Include="Code\MyMath\Vec3.h" />
+    <ClInclude Include="Code\MyMath\myMath.h" />
+    <ClInclude Include="Code\Primitive\Plane.h" />
+    <ClInclude Include="Code\Primitive\Sphere.h" />
+    <ClInclude Include="Code\Primitive\Triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
