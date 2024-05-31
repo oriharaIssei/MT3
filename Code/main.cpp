@@ -12,55 +12,56 @@
 #include <Plane.h>
 #include <Sphere.h>
 #include <Triangle.h>
+#include <AABB.h>
 
 #include <imgui.h>
 
 const char kWindowTitle[] = "LE2A_08_オリハライッセイ_MT3";
 
-void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
+void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa);
 
-bool CollisionSphere(const Sphere &a, const Sphere &b);
-bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane);
-bool CollisionPlaneSegment(const Plane &plane, const Segment &seg);
-bool CollisionTriangleSegment(const Triangle &tri, const Segment &seg);
+bool CollisionSphere(const Sphere &a,const Sphere &b);
+bool CollisionSphere2Plane(const Sphere &sphere,const Plane &plane);
+bool CollisionPlaneSegment(const Plane &plane,const Segment &seg);
+bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg);
 
 // Windowsアプリでのエントリーポイント(main関数)
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	const float kWindowWidth = 1280.0f;
 	const float kWindowHeight = 720.0f;
 
 	// ライブラリの初期化
-	Novice::Initialize(kWindowTitle, static_cast<int>(kWindowWidth), static_cast<int>(kWindowHeight));
+	Novice::Initialize(kWindowTitle,static_cast<int>(kWindowWidth),static_cast<int>(kWindowHeight));
 
 	//==============初期化==================
 	Camera camera;
-	camera.transform_.scale = { 1.0f,1.0f,1.0f };
-	camera.transform_.rotate = { 0.26f,0.0f,0.0f };
-	camera.transform_.translate = { 0.0f,1.9f,-6.49f };
+	camera.transform_.scale = {1.0f,1.0f,1.0f};
+	camera.transform_.rotate = {0.26f,0.0f,0.0f};
+	camera.transform_.translate = {0.0f,1.9f,-6.49f};
 
-	MyMatrix4x4 projectionMa = MakeMatrix::PerspectiveFov(0.45f, kWindowWidth / kWindowHeight, 0.1f, 100.0f);
+	MyMatrix4x4 projectionMa = MakeMatrix::PerspectiveFov(0.45f,kWindowWidth / kWindowHeight,0.1f,100.0f);
 	camera.vpMa_ = MakeMatrix::Affine(
 		camera.transform_.scale,
 		camera.transform_.rotate,
 		camera.transform_.translate
 	) * projectionMa;
 
-	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f, 0.0f, kWindowWidth, kWindowHeight, 0.0f, 1.0f);
+	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Triangle triangle;
-	triangle.vert[0] = { 0,1,0 };
-	triangle.vert[1] = { 1,0,0 };
-	triangle.vert[2] = { -1,0,0 };
+	AABB aabb1 = {
+		.min {-0.5f,-0.5f,-0.5f},
+		.max {0.0f,0.0f,0.0f},
+	};
+	AABB aabb2 = {
+		.min {0.2f,0.2f,0.2f},
+		.max {1.0f,1.0f,1.0f},
+	};
 
-	Segment seg;
-	seg.origin = { 0.0f,0.0f,0.0f };
-	seg.diff = { 2.0f,2.0f,2.0f };
-	seg.color = BLACK;
 
 	// キー入力結果を受け取る箱
-	char keys[256] = { 0 };
-	char preKeys[256] = { 0 };
+	char keys[256] = {0};
+	char preKeys[256] = {0};
 
 	// ウィンドウの×ボタンが押されるまでループ
 	while(Novice::ProcessMessage() == 0) {
@@ -68,7 +69,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		Novice::BeginFrame();
 
 		// キー入力を受け取る
-		memcpy(preKeys, keys, 256);
+		memcpy(preKeys,keys,256);
 		Novice::GetHitKeyStateAll(keys);
 
 		///
@@ -76,15 +77,49 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		///
 
 		ImGui::Begin("Camera");
-		ImGui::DragFloat3("Translate", &camera.transform_.translate.x, 0.01f);
-		ImGui::DragFloat3("Rotate", &camera.transform_.rotate.x, 0.01f);
+		ImGui::DragFloat3("Translate",&camera.transform_.translate.x,0.01f);
+		ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
 		ImGui::End();
-		ImGui::Begin("Triangle");
-		ImGui::DragFloat3("Translate", &triangle.transform.translate.x, 0.1f);
-		ImGui::DragFloat3("Rotate", &triangle.transform.rotate.x, 0.01f);
-		ImGui::End();
+		ImGui::Begin("AABB");
+		if(ImGui::TreeNode("AABB1")) {
+			ImGui::DragFloat3("Min",&aabb1.min.x,0.1f);
+			ImGui::DragFloat3("Max",&aabb1.max.x,0.1f);
+			aabb1.min = {
+				(std::min)(aabb1.min.x,aabb1.max.x),
+				(std::min)(aabb1.min.y,aabb1.max.y),
+				(std::min)(aabb1.min.z,aabb1.max.z)
+			};
+			aabb1.max = {
+				(std::max)(aabb1.min.x,aabb1.max.x),
+				(std::max)(aabb1.min.y,aabb1.max.y),
+				(std::max)(aabb1.min.z,aabb1.max.z)
+			};
 
-		triangle.UpdateMatrix();
+			ImGui::DragFloat3("Scale",&aabb1.transform.scale.x,0.1f);
+			ImGui::DragFloat3("Rotate",&aabb1.transform.rotate.x,0.1f);
+			ImGui::DragFloat3("Transform",&aabb1.transform.translate.x,0.1f);
+			ImGui::TreePop();
+		}
+		if(ImGui::TreeNode("AABB2")) {
+			ImGui::DragFloat3("Min",&aabb2.min.x,0.1f);
+			ImGui::DragFloat3("Max",&aabb2.max.x,0.1f);
+			aabb2.min = {
+				(std::min)(aabb2.min.x,aabb2.max.x),
+				(std::min)(aabb2.min.y,aabb2.max.y),
+				(std::min)(aabb2.min.z,aabb2.max.z)
+			};
+
+			aabb2.max = {
+				(std::max)(aabb2.min.x,aabb2.max.x),
+				(std::max)(aabb2.min.y,aabb2.max.y),
+				(std::max)(aabb2.min.z,aabb2.max.z)
+			};
+			ImGui::DragFloat3("Scale",&aabb2.transform.scale.x,0.1f);
+			ImGui::DragFloat3("Rotate",&aabb2.transform.rotate.x,0.1f);
+			ImGui::DragFloat3("Transform",&aabb2.transform.translate.x,0.1f);
+			ImGui::TreePop();
+		}
+		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
@@ -92,10 +127,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionTriangleSegment(triangle, seg)) {
-			seg.color = RED;
+		if(AABB::Collision(aabb1,aabb2)) {
+			aabb1.color = RED;
+			aabb2.color = RED;
 		} else {
-			seg.color = BLACK;
+			aabb1.color = WHITE;
+			aabb2.color = WHITE;
 		}
 
 		///
@@ -106,9 +143,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(camera.vpMa_, viewPortMa);
-		triangle.Draw(camera.vpMa_, viewPortMa);
-		seg.Draw(camera.vpMa_, viewPortMa);
+		DrawGrid(camera.vpMa_,viewPortMa);
+		aabb1.Draw(camera.vpMa_,viewPortMa);
+		aabb2.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -129,7 +166,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 }
 
 
-void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa) {
+void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa) {
 	// Grid の半分の幅
 	constexpr float kGridHalfWidth = 2.0f;
 	// 分割数
@@ -139,51 +176,51 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa
 
 	for(uint32_t xIndex = 0; xIndex <= kSubDivision; ++xIndex) {
 		// 線の始点
-		Vec3 startPos = { -kGridHalfWidth + kGridEvery * xIndex, 0.0f,  -kGridHalfWidth };
+		Vec3 startPos = {-kGridHalfWidth + kGridEvery * xIndex,0.0f,-kGridHalfWidth};
 		// 線の終点
-		Vec3 endPos = { -kGridHalfWidth + kGridEvery * xIndex, 0.0f,  kGridHalfWidth };
+		Vec3 endPos = {-kGridHalfWidth + kGridEvery * xIndex,0.0f,kGridHalfWidth};
 
 		// 始点と終点をビュープロジェクション変換
-		Vec3 ndcStartPos = TransformVector(startPos, viewProjectionMa);
-		Vec3 ndcEndPos = TransformVector(endPos, viewProjectionMa);
+		Vec3 ndcStartPos = TransformVector(startPos,viewProjectionMa);
+		Vec3 ndcEndPos = TransformVector(endPos,viewProjectionMa);
 
 		// NDCからスクリーン座標へ変換
-		Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
-		Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
+		Vec3 scStartPos = TransformVector(ndcStartPos,viewPortMa);
+		Vec3 scEndPos = TransformVector(ndcEndPos,viewPortMa);
 
 		// 線を描画
 		Novice::DrawLine(
-			static_cast<int>(scStartPos.x), static_cast<int>(scStartPos.y),
-			static_cast<int>(scEndPos.x), static_cast<int>(scEndPos.y),
+			static_cast<int>(scStartPos.x),static_cast<int>(scStartPos.y),
+			static_cast<int>(scEndPos.x),static_cast<int>(scEndPos.y),
 			0xaaaaaaff
 		);
 	}
 	for(uint32_t zIndex = 0; zIndex <= kSubDivision; ++zIndex) {
 		// 線の始点
-		Vec3 startPos = { kGridHalfWidth ,0.0f, -kGridHalfWidth + kGridEvery * zIndex };
+		Vec3 startPos = {kGridHalfWidth,0.0f,-kGridHalfWidth + kGridEvery * zIndex};
 		// 線の終点
-		Vec3 endPos = { -kGridHalfWidth ,0.0f , -kGridHalfWidth + kGridEvery * zIndex };
+		Vec3 endPos = {-kGridHalfWidth,0.0f,-kGridHalfWidth + kGridEvery * zIndex};
 
 		// 始点と終点をビュープロジェクション変換
-		Vec3 ndcStartPos = TransformVector(startPos, viewProjectionMa);
-		Vec3 ndcEndPos = TransformVector(endPos, viewProjectionMa);
+		Vec3 ndcStartPos = TransformVector(startPos,viewProjectionMa);
+		Vec3 ndcEndPos = TransformVector(endPos,viewProjectionMa);
 
 		// NDCからスクリーン座標へ変換
-		Vec3 scStartPos = TransformVector(ndcStartPos, viewPortMa);
-		Vec3 scEndPos = TransformVector(ndcEndPos, viewPortMa);
+		Vec3 scStartPos = TransformVector(ndcStartPos,viewPortMa);
+		Vec3 scEndPos = TransformVector(ndcEndPos,viewPortMa);
 
 		// 線を描画
 		Novice::DrawLine(
-			static_cast<int>(scStartPos.x), static_cast<int>(scStartPos.y),
-			static_cast<int>(scEndPos.x), static_cast<int>(scEndPos.y),
+			static_cast<int>(scStartPos.x),static_cast<int>(scStartPos.y),
+			static_cast<int>(scEndPos.x),static_cast<int>(scEndPos.y),
 			0xaaaaaaff
 		);
 	}
 }
 
-bool CollisionSphere(const Sphere &a, const Sphere &b) {
-	Vec3 worldPosA = TransformVector({ 0.0f,0.0f,0.0f }, a.worldMa);
-	Vec3 worldPosB = TransformVector({ 0.0f,0.0f,0.0f }, b.worldMa);
+bool CollisionSphere(const Sphere &a,const Sphere &b) {
+	Vec3 worldPosA = TransformVector({0.0f,0.0f,0.0f},a.worldMa);
+	Vec3 worldPosB = TransformVector({0.0f,0.0f,0.0f},b.worldMa);
 	if((worldPosA - worldPosB).length() < a.radius + b.radius) {
 		return true;
 	}
@@ -191,7 +228,7 @@ bool CollisionSphere(const Sphere &a, const Sphere &b) {
 	return false;
 }
 
-bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane) {
+bool CollisionSphere2Plane(const Sphere &sphere,const Plane &plane) {
 	float distance = (sphere.transformData.translate.dot(plane.normal.Normalize())) - plane.distance;
 
 	if(std::abs(distance) <= sphere.radius) {
@@ -201,7 +238,7 @@ bool CollisionSphere2Plane(const Sphere &sphere, const Plane &plane) {
 	return false;
 }
 
-bool CollisionPlaneSegment(const Plane &plane, const Segment &seg) {
+bool CollisionPlaneSegment(const Plane &plane,const Segment &seg) {
 	float dot = plane.normal.dot(seg.diff);
 	if(dot == 0.0f) {
 		return false;
@@ -216,11 +253,11 @@ bool CollisionPlaneSegment(const Plane &plane, const Segment &seg) {
 	return true;
 }
 
-bool CollisionTriangleSegment(const Triangle &tri, const Segment &seg) {
+bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg) {
 	Vec3 transformedVerts[3] = {
-		TransformVector(tri.vert[0], tri.worldMat),
-		TransformVector(tri.vert[1], tri.worldMat),
-		TransformVector(tri.vert[2], tri.worldMat)
+		TransformVector(tri.vert[0],tri.worldMat),
+		TransformVector(tri.vert[1],tri.worldMat),
+		TransformVector(tri.vert[2],tri.worldMat)
 	};
 
 	Vec3 triangleNormal = (transformedVerts[1] - transformedVerts[0]).Cross(transformedVerts[2] - transformedVerts[0]);
