@@ -1,5 +1,7 @@
 #include <Novice.h>
 
+#include <algorithm>
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <stdint.h>
@@ -24,6 +26,7 @@ bool CollisionSphere(const Sphere &a,const Sphere &b);
 bool CollisionSphere2Plane(const Sphere &sphere,const Plane &plane);
 bool CollisionPlaneSegment(const Plane &plane,const Segment &seg);
 bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg);
+bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -53,11 +56,11 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		.min {-0.5f,-0.5f,-0.5f},
 		.max {0.0f,0.0f,0.0f},
 	};
-	AABB aabb2 = {
-		.min {0.2f,0.2f,0.2f},
-		.max {1.0f,1.0f,1.0f},
+	Sphere sphere = {
+		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}},
+		.radius = 3,
+		.color = WHITE
 	};
-
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -80,45 +83,28 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		ImGui::DragFloat3("Translate",&camera.transform_.translate.x,0.01f);
 		ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
 		ImGui::End();
+
 		ImGui::Begin("AABB");
-		if(ImGui::TreeNode("AABB1")) {
-			ImGui::DragFloat3("Min",&aabb1.min.x,0.1f);
-			ImGui::DragFloat3("Max",&aabb1.max.x,0.1f);
-			aabb1.min = {
-				(std::min)(aabb1.min.x,aabb1.max.x),
-				(std::min)(aabb1.min.y,aabb1.max.y),
-				(std::min)(aabb1.min.z,aabb1.max.z)
-			};
-			aabb1.max = {
-				(std::max)(aabb1.min.x,aabb1.max.x),
-				(std::max)(aabb1.min.y,aabb1.max.y),
-				(std::max)(aabb1.min.z,aabb1.max.z)
-			};
+		ImGui::DragFloat3("Min",&aabb1.min.x,0.1f);
+		ImGui::DragFloat3("Max",&aabb1.max.x,0.1f);
+		aabb1.min = {
+			(std::min)(aabb1.min.x,aabb1.max.x),
+			(std::min)(aabb1.min.y,aabb1.max.y),
+			(std::min)(aabb1.min.z,aabb1.max.z)
+		};
+		aabb1.max = {
+			(std::max)(aabb1.min.x,aabb1.max.x),
+			(std::max)(aabb1.min.y,aabb1.max.y),
+			(std::max)(aabb1.min.z,aabb1.max.z)
+		};
+		ImGui::End();
 
-			ImGui::DragFloat3("Scale",&aabb1.transform.scale.x,0.1f);
-			ImGui::DragFloat3("Rotate",&aabb1.transform.rotate.x,0.1f);
-			ImGui::DragFloat3("Transform",&aabb1.transform.translate.x,0.1f);
-			ImGui::TreePop();
-		}
-		if(ImGui::TreeNode("AABB2")) {
-			ImGui::DragFloat3("Min",&aabb2.min.x,0.1f);
-			ImGui::DragFloat3("Max",&aabb2.max.x,0.1f);
-			aabb2.min = {
-				(std::min)(aabb2.min.x,aabb2.max.x),
-				(std::min)(aabb2.min.y,aabb2.max.y),
-				(std::min)(aabb2.min.z,aabb2.max.z)
-			};
-
-			aabb2.max = {
-				(std::max)(aabb2.min.x,aabb2.max.x),
-				(std::max)(aabb2.min.y,aabb2.max.y),
-				(std::max)(aabb2.min.z,aabb2.max.z)
-			};
-			ImGui::DragFloat3("Scale",&aabb2.transform.scale.x,0.1f);
-			ImGui::DragFloat3("Rotate",&aabb2.transform.rotate.x,0.1f);
-			ImGui::DragFloat3("Transform",&aabb2.transform.translate.x,0.1f);
-			ImGui::TreePop();
-		}
+		ImGui::Begin("Sphere");
+		ImGui::DragFloat("Radius",&sphere.radius,0.01f);
+		ImGui::DragFloat3("Scale",&sphere.transformData.scale.x,0.01f);
+		ImGui::DragFloat3("Rotate",&sphere.transformData.rotate.x,0.01f);
+		ImGui::DragFloat3("Translate",&sphere.transformData.translate.x,0.01f);
+		sphere.worldMa = MakeMatrix::Affine(sphere.transformData);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -127,12 +113,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(AABB::Collision(aabb1,aabb2)) {
-			aabb1.color = RED;
-			aabb2.color = RED;
+		if(CollisionAABBSphere(aabb1,sphere)) {
+			sphere.color = RED;
 		} else {
-			aabb1.color = WHITE;
-			aabb2.color = WHITE;
+			sphere.color = WHITE;
 		}
 
 		///
@@ -145,7 +129,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 		DrawGrid(camera.vpMa_,viewPortMa);
 		aabb1.Draw(camera.vpMa_,viewPortMa);
-		aabb2.Draw(camera.vpMa_,viewPortMa);
+		sphere.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -284,5 +268,22 @@ bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg) {
 	   cross20.dot(triangleNormal) >= 0.0f) {
 		return true;
 	}
+	return false;
+}
+
+bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere) {
+	Vec3 sphereCenter = {sphere.worldMa[3][0],sphere.worldMa[3][1],sphere.worldMa[3][2]};
+	Vec3 closestPoint = {
+		std::clamp<float>(sphereCenter.x,aabb.min.x,aabb.max.x),
+		std::clamp<float>(sphereCenter.y,aabb.min.y,aabb.max.y),
+		std::clamp<float>(sphereCenter.z,aabb.min.z,aabb.max.z)
+	};
+
+	float distance = (closestPoint - sphereCenter).length();
+
+	if(distance <= sphere.radius) {
+		return true;
+	}
+
 	return false;
 }
