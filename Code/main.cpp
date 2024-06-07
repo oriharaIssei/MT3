@@ -27,6 +27,7 @@ bool CollisionSphere2Plane(const Sphere &sphere,const Plane &plane);
 bool CollisionPlaneSegment(const Plane &plane,const Segment &seg);
 bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg);
 bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere);
+bool CollisionAABBSeg(const AABB &aabb,const Segment &seg);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -56,9 +57,9 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		.min {-0.5f,-0.5f,-0.5f},
 		.max {0.0f,0.0f,0.0f},
 	};
-	Sphere sphere = {
-		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}},
-		.radius = 3,
+	Segment seg = {
+		.origin = {0.0f,0.0f,0.0f},
+		.diff = {4.0f,4.0f,4.0f},
 		.color = WHITE
 	};
 
@@ -99,12 +100,9 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		};
 		ImGui::End();
 
-		ImGui::Begin("Sphere");
-		ImGui::DragFloat("Radius",&sphere.radius,0.01f);
-		ImGui::DragFloat3("Scale",&sphere.transformData.scale.x,0.01f);
-		ImGui::DragFloat3("Rotate",&sphere.transformData.rotate.x,0.01f);
-		ImGui::DragFloat3("Translate",&sphere.transformData.translate.x,0.01f);
-		sphere.worldMa = MakeMatrix::Affine(sphere.transformData);
+		ImGui::Begin("Segment");
+		ImGui::DragFloat3("Origin",&seg.origin.x,0.01f);
+		ImGui::DragFloat3("Diff",&seg.diff.x,0.01f);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -113,10 +111,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionAABBSphere(aabb1,sphere)) {
-			sphere.color = RED;
+		if(CollisionAABBSeg(aabb1,seg)) {
+			aabb1.color = RED;
 		} else {
-			sphere.color = WHITE;
+			aabb1.color = WHITE;
 		}
 
 		///
@@ -129,7 +127,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 		DrawGrid(camera.vpMa_,viewPortMa);
 		aabb1.Draw(camera.vpMa_,viewPortMa);
-		sphere.Draw(camera.vpMa_,viewPortMa);
+		seg.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -283,6 +281,63 @@ bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere) {
 
 	if(distance <= sphere.radius) {
 		return true;
+	}
+
+	return false;
+}
+
+bool CollisionAABBSeg(const AABB &aabb,const Segment &seg) {
+	Vec3 maxT;
+	Vec3 minT;
+	maxT = {
+		(aabb.max.x - seg.origin.x) / seg.diff.x,
+		(aabb.max.y - seg.origin.y) / seg.diff.y,
+		(aabb.max.z - seg.origin.z) / seg.diff.z,
+	};
+	minT = {
+		(aabb.min.x - seg.origin.x) / seg.diff.x,
+		(aabb.min.y - seg.origin.y) / seg.diff.y,
+		(aabb.min.z - seg.origin.z) / seg.diff.z,
+	};
+
+	if(std::isnan(maxT.x)) {
+		maxT.x = 99;
+	} else if(std::isnan(maxT.y)) {
+		maxT.y = 99;
+	} else if(std::isnan(maxT.z)) {
+		maxT.z = 99;
+	} else if(std::isnan(minT.x)) {
+		minT.x = 0;
+	} else if(std::isnan(minT.y)) {
+		minT.y = 0;
+	} else if(std::isnan(minT.z)) {
+		minT.z = 0;
+	}
+
+	Vec3 tNear = {
+		min(minT.x,maxT.x),
+		min(minT.y,maxT.y),
+		min(minT.z,maxT.z)
+	};
+	Vec3 tFar = {
+		max(minT.x,maxT.x),
+		max(minT.y,maxT.y),
+		max(minT.z,maxT.z)
+	};
+
+	float tMax = (std::min)((std::min)(tFar.x,tFar.y),tFar.z);
+	float tMin = (std::max)((std::max)(tNear.x,tNear.y),tNear.z);
+
+	if(tMax >= tMin) {
+		if(tMax >= 0.0f && tMax <= 1.0f) {
+			return true;
+		}
+		if(tMin >= 0.0f && tMin <= 1.0f) {
+			return true;
+		}
+		if(tMin <= 0.0f && tMax >= 1.0f) {
+			return true;
+		}
 	}
 
 	return false;

@@ -232,15 +232,24 @@ MyMatrix4x4 MakeMatrix::Scale(const Vec3& vec) { return MyMatrix4x4(
 	0.0f, 0.0f, 0.0f, 1.0f}); }
 
 MyMatrix4x4 MakeMatrix::RotateX(const float& radian) {
-	return MyMatrix4x4({01.0f, .0f, 0.0f, 0.0f, 0.0f, std::cosf(radian), std::sinf(radian), 0.0f, 0.0f, -std::sinf(radian), std::cosf(radian), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
+	return MyMatrix4x4({1.0f, 0.0f, 0.0f, 0.0f,
+					   0.0f, std::cosf(radian), std::sinf(radian), 0.0f,
+					   0.0f,-std::sinf(radian), std::cosf(radian), 0.0f,
+					   0.0f, 0.0f, 0.0f, 1.0f});
 }
 
 MyMatrix4x4 MakeMatrix::RotateY(const float& radian) {
-	return MyMatrix4x4({std::cosf(radian), 0.0f, -std::sinf(radian), 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, std::sinf(radian), 0.0f, std::cosf(radian), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
+	return MyMatrix4x4({std::cosf(radian), 0.0f, -std::sinf(radian), 0.0f,
+					   0.0f,1.0f, 0.0f, 0.0f,
+					   std::sinf(radian), 0.0f, std::cosf(radian), 0.0f,
+					   0.0f, 0.0f, 0.0f, 1.0f});
 }
 
 MyMatrix4x4 MakeMatrix::RotateZ(const float& radian) {
-	return MyMatrix4x4({std::cosf(radian), std::sinf(radian), 0.0f, 0.0f, -std::sinf(radian), std::cosf(radian), 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
+	return MyMatrix4x4({std::cosf(radian), std::sinf(radian), 0.0f, 0.0f,
+					   -std::sinf(radian), std::cosf(radian), 0.0f, 0.0f,
+					   0.0f, 0.0f, 1.0f, 0.0f,
+					   0.0f, 0.0f, 0.0f, 1.0f});
 }
 
 MyMatrix4x4 MakeMatrix::RotateXYZ(const Vec3& radian) { return MakeMatrix::RotateZ(radian.z) * MakeMatrix::RotateX(radian.x) * MakeMatrix::RotateY(radian.y); }
