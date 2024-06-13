@@ -10,10 +10,13 @@
 #include <Vec3.h>
 
 #include <Camera.h>
+
 #include <Lines.h>
+#include <Triangle.h>
 #include <Plane.h>
 #include <Sphere.h>
-#include <Triangle.h>
+
+#include "OBB.h"
 #include <AABB.h>
 
 #include <imgui.h>
@@ -28,6 +31,7 @@ bool CollisionPlaneSegment(const Plane &plane,const Segment &seg);
 bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg);
 bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere);
 bool CollisionAABBSeg(const AABB &aabb,const Segment &seg);
+bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -53,13 +57,18 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	AABB aabb1 = {
-		.min {-0.5f,-0.5f,-0.5f},
-		.max {0.0f,0.0f,0.0f},
+	OBB obb = {
+		.center = {-1.0f,0.0f,0.0f},
+		.orientations = {{1.0f,0.0f,0.0f},
+		{0.0f,1.0f,0.0f},
+		{0.0f,0.0f,1.0f}},
+		.size {0.5f,0.5f,0.5f},
+		.color = WHITE
 	};
-	Segment seg = {
-		.origin = {0.0f,0.0f,0.0f},
-		.diff = {4.0f,4.0f,4.0f},
+
+	Sphere sphere = {
+		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}},
+		.radius = 1.0f,
 		.color = WHITE
 	};
 
@@ -85,25 +94,24 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
 		ImGui::End();
 
-		ImGui::Begin("AABB");
-		ImGui::DragFloat3("Min",&aabb1.min.x,0.1f);
-		ImGui::DragFloat3("Max",&aabb1.max.x,0.1f);
-		aabb1.min = {
-			(std::min)(aabb1.min.x,aabb1.max.x),
-			(std::min)(aabb1.min.y,aabb1.max.y),
-			(std::min)(aabb1.min.z,aabb1.max.z)
-		};
-		aabb1.max = {
-			(std::max)(aabb1.min.x,aabb1.max.x),
-			(std::max)(aabb1.min.y,aabb1.max.y),
-			(std::max)(aabb1.min.z,aabb1.max.z)
-		};
+		ImGui::Begin("OBB");
+		ImGui::DragFloat3("Center",&obb.center.x,0.1f);
+		ImGui::DragFloat3("Size",&obb.size.x,0.1f,1.0f);
+		ImGui::DragFloat3("Rotate",&obb.rotate.x,0.1f);
+		obb.UpdateOrientations();
+		ImGui::DragFloat3("Orientation[0]",&obb.orientations[0].x,0.1f);
+		ImGui::DragFloat3("Orientation[1]",&obb.orientations[1].x,0.1f);
+		ImGui::DragFloat3("Orientation[2]",&obb.orientations[2].x,0.1f);
 		ImGui::End();
 
-		ImGui::Begin("Segment");
-		ImGui::DragFloat3("Origin",&seg.origin.x,0.01f);
-		ImGui::DragFloat3("Diff",&seg.diff.x,0.01f);
+		ImGui::Begin("Sphere");
+		ImGui::DragFloat3("Center",&sphere.transformData.translate.x,0.1f);
+		ImGui::DragFloat("Radius",&sphere.radius,0.1f);
 		ImGui::End();
+
+		obb.worldTransform = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb.rotate,obb.center);
+
+		sphere.worldMa = MakeMatrix::Affine(sphere.transformData);
 
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
@@ -111,10 +119,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionAABBSeg(aabb1,seg)) {
-			aabb1.color = RED;
+		if(CollisionOBBSphere(obb,sphere)) {
+			obb.color = RED;
 		} else {
-			aabb1.color = WHITE;
+			obb.color = WHITE;
 		}
 
 		///
@@ -126,8 +134,8 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		///
 
 		DrawGrid(camera.vpMa_,viewPortMa);
-		aabb1.Draw(camera.vpMa_,viewPortMa);
-		seg.Draw(camera.vpMa_,viewPortMa);
+		obb.Draw(camera.vpMa_,viewPortMa);
+		sphere.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -340,5 +348,19 @@ bool CollisionAABBSeg(const AABB &aabb,const Segment &seg) {
 		}
 	}
 
+	return false;
+}
+
+bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere) {
+	Vec3 pointFormObbLocal = TransformVector(sphere.transformData.translate,obb.worldTransform);
+	AABB aabbFormObbLocal {.min = -obb.size,.max = obb.size};
+	Sphere sphereFromObbLocal = sphere;
+	sphereFromObbLocal.transformData.translate = pointFormObbLocal;
+	sphereFromObbLocal.worldMa[3][0]=pointFormObbLocal.x;
+		sphereFromObbLocal.worldMa[3][1] = pointFormObbLocal.y;
+		sphereFromObbLocal.worldMa[3][2] = pointFormObbLocal.z;
+	if(CollisionAABBSphere(aabbFormObbLocal,sphereFromObbLocal)) {
+		return true;
+	}
 	return false;
 }

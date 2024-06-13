@@ -122,6 +122,7 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClCompile Include="Code\MyMath\MyMatrix4x4.cpp" />
     <ClCompile Include="Code\MyMath\Vec3.cpp" />
     <ClCompile Include="Code\MyMath\myMath.cpp" />
+    <ClCompile Include="Code\Primitive\OBB.cpp" />
     <ClCompile Include="Code\Primitive\Plane.cpp" />
     <ClCompile Include="Code\Primitive\Sphere.cpp" />
     <ClCompile Include="Code\Primitive\Triangle.cpp" />
@@ -160,6 +161,7 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClInclude Include="Code\MyMath\Transform.h" />
     <ClInclude Include="Code\MyMath\Vec3.h" />
     <ClInclude Include="Code\MyMath\myMath.h" />
+    <ClInclude Include="Code\Primitive\OBB.h" />
     <ClInclude Include="Code\Primitive\Plane.h" />
     <ClInclude Include="Code\Primitive\Sphere.h" />
     <ClInclude Include="Code\Primitive\Triangle.h" />
