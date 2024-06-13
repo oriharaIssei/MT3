@@ -18,7 +18,7 @@ struct OBB {
 
 	uint32_t color;
 
-	MyMatrix4x4 worldTransform;
+	MyMatrix4x4 worldMat;
 
 	void UpdateOrientations();
 	void Draw(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa);

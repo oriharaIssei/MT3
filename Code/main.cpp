@@ -32,6 +32,7 @@ bool CollisionTriangleSegment(const Triangle &tri,const Segment &seg);
 bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere);
 bool CollisionAABBSeg(const AABB &aabb,const Segment &seg);
 bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere);
+bool CollisionOBBSegment(const OBB &obb,const Segment &segment);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -66,9 +67,9 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		.color = WHITE
 	};
 
-	Sphere sphere = {
-		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}},
-		.radius = 1.0f,
+	Segment seg = {
+		.origin = {-0.8f,-0.3f,0.0f},
+		.diff = {0.5f,0.5f,0.5f},
 		.color = WHITE
 	};
 
@@ -104,14 +105,12 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		ImGui::DragFloat3("Orientation[2]",&obb.orientations[2].x,0.1f);
 		ImGui::End();
 
-		ImGui::Begin("Sphere");
-		ImGui::DragFloat3("Center",&sphere.transformData.translate.x,0.1f);
-		ImGui::DragFloat("Radius",&sphere.radius,0.1f);
+		ImGui::Begin("Segment");
+		ImGui::DragFloat3("Origin",&seg.origin.x,0.1f);
+		ImGui::DragFloat3("Diff",&seg.diff.x,0.1f);
 		ImGui::End();
 
-		obb.worldTransform = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb.rotate,obb.center);
-
-		sphere.worldMa = MakeMatrix::Affine(sphere.transformData);
+		obb.worldMat = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb.rotate,obb.center);
 
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
@@ -119,7 +118,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionOBBSphere(obb,sphere)) {
+		if(CollisionOBBSegment(obb,seg)) {
 			obb.color = RED;
 		} else {
 			obb.color = WHITE;
@@ -135,7 +134,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 		DrawGrid(camera.vpMa_,viewPortMa);
 		obb.Draw(camera.vpMa_,viewPortMa);
-		sphere.Draw(camera.vpMa_,viewPortMa);
+		seg.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -352,7 +351,7 @@ bool CollisionAABBSeg(const AABB &aabb,const Segment &seg) {
 }
 
 bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere) {
-	Vec3 pointFormObbLocal = TransformVector(sphere.transformData.translate,obb.worldTransform.Inverse());
+	Vec3 pointFormObbLocal = TransformVector(sphere.transformData.translate,obb.worldMat.Inverse());
 	AABB aabbFormObbLocal {.min = -obb.size,.max = obb.size};
 	Sphere sphereFromObbLocal = sphere;
 	sphereFromObbLocal.transformData.translate = pointFormObbLocal;
@@ -360,6 +359,19 @@ bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere) {
 	sphereFromObbLocal.worldMa[3][1] = pointFormObbLocal.y;
 	sphereFromObbLocal.worldMa[3][2] = pointFormObbLocal.x;
 	if(CollisionAABBSphere(aabbFormObbLocal,sphereFromObbLocal)) {
+		return true;
+	}
+	return false;
+}
+
+bool CollisionOBBSegment(const OBB &obb,const Segment &segment) {
+	MyMatrix4x4 inverseObbWorldMat = obb.worldMat.Inverse();
+	Segment segFromObbLocal = {.origin = TransformVector(segment.origin,inverseObbWorldMat),
+		.diff = TransformVector(segment.diff,inverseObbWorldMat)};
+	AABB collisionAABB {
+		.min = -obb.size,.max = obb.size
+	};
+	if(CollisionAABBSeg(collisionAABB,segFromObbLocal)) {
 		return true;
 	}
 	return false;

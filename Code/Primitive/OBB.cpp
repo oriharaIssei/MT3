@@ -24,7 +24,7 @@ void OBB::Draw(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa
 	vertices[7] = {max.x,max.y,max.z};
 
 	for(int i = 0; i < 8; ++i) {
-		vertices[i] = TransformVector(TransformVector(TransformVector(vertices[i],worldTransform),viewProjectionMa),viewPortMa);
+		vertices[i] = TransformVector(TransformVector(TransformVector(vertices[i],worldMat),viewProjectionMa),viewPortMa);
 	}
 
 	Novice::DrawLine(static_cast<int>(vertices[0].x),static_cast<int>(vertices[0].y),static_cast<int>(vertices[1].x),static_cast<int>(vertices[1].y),color);
