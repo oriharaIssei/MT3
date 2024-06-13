@@ -60,9 +60,9 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 	OBB obb = {
 		.center = {-1.0f,0.0f,0.0f},
 		.orientations = {{1.0f,0.0f,0.0f},
-		{0.0f,1.0f,0.0f},
-		{0.0f,0.0f,1.0f}},
-		.size {0.5f,0.5f,0.5f},
+		{1.0f,0.0f,0.0f},
+		{1.0f,0.0f,0.0f}},
+		.size {1.0f,1.0f,1.0f},
 		.color = WHITE
 	};
 
@@ -352,13 +352,13 @@ bool CollisionAABBSeg(const AABB &aabb,const Segment &seg) {
 }
 
 bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere) {
-	Vec3 pointFormObbLocal = TransformVector(sphere.transformData.translate,obb.worldTransform);
+	Vec3 pointFormObbLocal = TransformVector(sphere.transformData.translate,obb.worldTransform.Inverse());
 	AABB aabbFormObbLocal {.min = -obb.size,.max = obb.size};
 	Sphere sphereFromObbLocal = sphere;
 	sphereFromObbLocal.transformData.translate = pointFormObbLocal;
-	sphereFromObbLocal.worldMa[3][0]=pointFormObbLocal.x;
-		sphereFromObbLocal.worldMa[3][1] = pointFormObbLocal.y;
-		sphereFromObbLocal.worldMa[3][2] = pointFormObbLocal.z;
+	sphereFromObbLocal.worldMa[3][0] = pointFormObbLocal.x;
+	sphereFromObbLocal.worldMa[3][1] = pointFormObbLocal.y;
+	sphereFromObbLocal.worldMa[3][2] = pointFormObbLocal.x;
 	if(CollisionAABBSphere(aabbFormObbLocal,sphereFromObbLocal)) {
 		return true;
 	}
