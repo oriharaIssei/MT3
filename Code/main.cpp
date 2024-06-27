@@ -1,5 +1,7 @@
 #include <Novice.h>
 
+#include <vector>
+
 #include <algorithm>
 
 #define _USE_MATH_DEFINES
@@ -33,6 +35,7 @@ bool CollisionAABBSphere(const AABB &aabb,const Sphere &sphere);
 bool CollisionAABBSeg(const AABB &aabb,const Segment &seg);
 bool CollisionOBBSphere(const OBB &obb,const Sphere &sphere);
 bool CollisionOBBSegment(const OBB &obb,const Segment &segment);
+bool CollisionOBBOBB(const OBB &a,const OBB &b);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -59,17 +62,26 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
 	OBB obb = {
-		.center = {-1.0f,0.0f,0.0f},
-		.orientations = {{1.0f,0.0f,0.0f},
-		{1.0f,0.0f,0.0f},
-		{1.0f,0.0f,0.0f}},
-		.size {1.0f,1.0f,1.0f},
+		.center = {0.0f,0.0f,0.0f},
+		.rotate = {0.0f,0.0f,0.0f},
+		.orientations = {
+			{1.0f,0.0f,0.0f},
+		{0.0f,1.0f,0.0f},
+		{0.0f,0.0f,1.0f}
+	},
+		.size {0.83f,0.26f,0.24f},
 		.color = WHITE
 	};
 
-	Segment seg = {
-		.origin = {-0.8f,-0.3f,0.0f},
-		.diff = {0.5f,0.5f,0.5f},
+	OBB obb2 = {
+		.center = {0.9f,0.66f,0.78f},
+		.rotate = {-0.05f,-2.49f,0.15f},
+		.orientations = {
+			{1.0f,0.0f,0.0f},
+		{0.0f,1.0f,0.0f},
+		{0.0f,0.0f,1.0f}
+	},
+		.size {0.5f,0.37f,0.5f},
 		.color = WHITE
 	};
 
@@ -104,13 +116,18 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		ImGui::DragFloat3("Orientation[1]",&obb.orientations[1].x,0.1f);
 		ImGui::DragFloat3("Orientation[2]",&obb.orientations[2].x,0.1f);
 		ImGui::End();
-
-		ImGui::Begin("Segment");
-		ImGui::DragFloat3("Origin",&seg.origin.x,0.1f);
-		ImGui::DragFloat3("Diff",&seg.diff.x,0.1f);
-		ImGui::End();
-
 		obb.worldMat = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb.rotate,obb.center);
+
+		ImGui::Begin("OBB 2");
+		ImGui::DragFloat3("Center",&obb2.center.x,0.1f);
+		ImGui::DragFloat3("Size",&obb2.size.x,0.1f,1.0f);
+		ImGui::DragFloat3("Rotate",&obb2.rotate.x,0.1f);
+		obb2.UpdateOrientations();
+		ImGui::DragFloat3("Orientation[0]",&obb2.orientations[0].x,0.1f);
+		ImGui::DragFloat3("Orientation[1]",&obb2.orientations[1].x,0.1f);
+		ImGui::DragFloat3("Orientation[2]",&obb2.orientations[2].x,0.1f);
+		ImGui::End();
+		obb2.worldMat = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb2.rotate,obb2.center);
 
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
@@ -118,7 +135,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionOBBSegment(obb,seg)) {
+		if(CollisionOBBOBB(obb,obb2)) {
 			obb.color = RED;
 		} else {
 			obb.color = WHITE;
@@ -134,7 +151,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 		DrawGrid(camera.vpMa_,viewPortMa);
 		obb.Draw(camera.vpMa_,viewPortMa);
-		seg.Draw(camera.vpMa_,viewPortMa);
+		obb2.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -375,4 +392,97 @@ bool CollisionOBBSegment(const OBB &obb,const Segment &segment) {
 		return true;
 	}
 	return false;
+}
+
+bool CollisionOBBOBB(const OBB &a,const OBB &b) {
+	Vec3 faceNormal[2][3];
+
+	faceNormal[0][0] = a.orientations[0];
+	faceNormal[0][1] = a.orientations[1];
+	faceNormal[0][2] = a.orientations[2];
+	faceNormal[1][0] = b.orientations[0];
+	faceNormal[1][1] = b.orientations[1];
+	faceNormal[1][2] = b.orientations[2];
+
+	Vec3 min = -a.size;
+	Vec3 max = a.size;
+	Vec3 vertices[2][8];
+	vertices[0][0] = TransformVector({min.x,min.y,min.z},a.worldMat);
+	vertices[0][1] = TransformVector({max.x,min.y,min.z},a.worldMat);
+	vertices[0][2] = TransformVector({min.x,max.y,min.z},a.worldMat);
+	vertices[0][3] = TransformVector({max.x,max.y,min.z},a.worldMat);
+	vertices[0][4] = TransformVector({min.x,min.y,max.z},a.worldMat);
+	vertices[0][5] = TransformVector({max.x,min.y,max.z},a.worldMat);
+	vertices[0][6] = TransformVector({min.x,max.y,max.z},a.worldMat);
+	vertices[0][7] = TransformVector({max.x,max.y,max.z},a.worldMat);
+
+	min = -b.size;
+	max = b.size;
+	vertices[1][0] = TransformVector({min.x,min.y,min.z},b.worldMat);
+	vertices[1][1] = TransformVector({max.x,min.y,min.z},b.worldMat);
+	vertices[1][2] = TransformVector({min.x,max.y,min.z},b.worldMat);
+	vertices[1][3] = TransformVector({max.x,max.y,min.z},b.worldMat);
+	vertices[1][4] = TransformVector({min.x,min.y,max.z},b.worldMat);
+	vertices[1][5] = TransformVector({max.x,min.y,max.z},b.worldMat);
+	vertices[1][6] = TransformVector({min.x,max.y,max.z},b.worldMat);
+	vertices[1][7] = TransformVector({max.x,max.y,max.z},b.worldMat);
+
+	for(int32_t row = 0; row < 2; row++) {
+		for(int32_t col = 0; col < 3; col++) {
+			std::vector<float> afterProjection[2];
+			for(int32_t vertCol = 0; vertCol < 2; vertCol++) {
+				for(int32_t vertRow = 0; vertRow < 8; vertRow++) {
+					afterProjection[vertCol].push_back(vertices[vertCol][vertRow].dot(faceNormal[row][col]));
+				}
+			}
+			float aMax = (std::ranges::max)(afterProjection[0]);
+			float aMin = (std::ranges::min)(afterProjection[0]);
+			float aLength = aMax - aMin;
+
+			float bMax = (std::ranges::max)(afterProjection[1]);
+			float bMin = (std::ranges::min)(afterProjection[1]);
+			float bLength = bMax - bMin;
+
+			float biggest = (std::max<float>)(aMax,bMax);
+			float smallest = (std::min<float>)(aMin,bMin);
+			if((biggest - smallest) > aLength + bLength) {
+				return false;
+			}
+		}
+	}
+
+	Vec3 lineCross[3][3];
+	for(size_t row = 0; row < 3; row++) {
+		for(size_t col = 0; col < 3; col++) {
+			lineCross[row][col] = a.orientations[row].Cross(b.orientations[col]);
+		}
+	}
+
+	for(int32_t row = 0; row < 3; row++) {
+		for(int32_t col = 0; col < 3; col++) {
+			std::vector<float> afterProjection[2];
+			for(int32_t vertCol = 0; vertCol < 2; vertCol++) {
+				for(int32_t vertRow = 0; vertRow < 8; vertRow++) {
+					afterProjection[vertCol].push_back(vertices[vertCol][vertRow].dot(lineCross[row][col]));
+				}
+			}
+
+			float aMax = (std::ranges::max)(afterProjection[0]);
+			float aMin = (std::ranges::min)(afterProjection[0]);
+			float aLength = aMax - aMin;
+
+			float bMax = (std::ranges::max)(afterProjection[1]);
+			float bMin = (std::ranges::min)(afterProjection[1]);
+			float bLength = bMax - bMin;
+
+			float biggest = (std::max<float>)(aMax,bMax);
+			float smallest = (std::min<float>)(aMin,bMin);
+
+			if((biggest - smallest) > aLength + bLength) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
