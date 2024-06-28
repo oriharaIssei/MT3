@@ -1,7 +1,5 @@
 #include <Novice.h>
 
-#include <vector>
-
 #include <algorithm>
 
 #define _USE_MATH_DEFINES
@@ -27,7 +25,10 @@ const char kWindowTitle[] = "LE2A_08_オリハライッセイ_MT3";
 
 void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa);
 
+float Lerp(float p0,float p1,float t);
+Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t);
 
+void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
@@ -53,9 +54,18 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Sphere p0;
-	Sphere p1;
-	Sphere p2;
+	Sphere p0 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.8f,0.58f,1.0f}},
+		.radius = 0.1f,
+		.color = BLACK
+	};
+	Sphere p1 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{1.76f,1.0f,-0.3f}},
+		.radius = 0.1f,
+		.color = BLACK
+	};
+	Sphere p2 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.94f,-0.7f,2.3f}},
+		.radius = 0.1f,
+		.color = BLACK
+	};
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -79,30 +89,15 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
 		ImGui::End();
 
-
-
-		ImGui::Begin("OBB 2");
-		ImGui::DragFloat3("Center",&obb2.center.x,0.1f);
-		ImGui::DragFloat3("Size",&obb2.size.x,0.1f,1.0f);
-		ImGui::DragFloat3("Rotate",&obb2.rotate.x,0.1f);
-		obb2.UpdateOrientations();
-		ImGui::DragFloat3("Orientation[0]",&obb2.orientations[0].x,0.1f);
-		ImGui::DragFloat3("Orientation[1]",&obb2.orientations[1].x,0.1f);
-		ImGui::DragFloat3("Orientation[2]",&obb2.orientations[2].x,0.1f);
-		ImGui::End();
-		obb2.worldMat = MakeMatrix::Affine({1.0f,1.0f,1.0f},obb2.rotate,obb2.center);
-
 		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
 			camera.transform_.rotate,
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(CollisionOBBOBB(obb,obb2)) {
-			obb.color = RED;
-		} else {
-			obb.color = WHITE;
-		}
+		p0.DebugUpdate("p0");
+		p1.DebugUpdate("p1");
+		p2.DebugUpdate("p2");
 
 		///
 		/// ↑更新処理ここまで
@@ -113,8 +108,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		///
 
 		DrawGrid(camera.vpMa_,viewPortMa);
-		obb.Draw(camera.vpMa_,viewPortMa);
-		obb2.Draw(camera.vpMa_,viewPortMa);
+		DrawBezier(p0.transformData.translate,p1.transformData.translate,p2.transformData.translate,camera.vpMa_,viewPortMa,WHITE);
+		p0.Draw(camera.vpMa_,viewPortMa);
+		p1.Draw(camera.vpMa_,viewPortMa);
+		p2.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
@@ -187,3 +184,41 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa)
 	}
 }
 
+float Lerp(float p0,float p1,float t) {
+	return ((1 - t) * p0) + (t * p1);
+}
+
+Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t) {
+	return Vec3(Lerp(p0.x,p1.x,t),Lerp(p0.y,p1.y,t),Lerp(p0.z,p1.z,t));
+}
+
+void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color) {
+	constexpr float division = 64;
+
+	Vec3 start,end;
+	Vec3 ndcStartPos,ndcEndPos;
+	Vec3 scStartPos,scEndPos;
+	float currentDivision = 0,nextDevision;
+
+	for(uint32_t i = 0; i < static_cast<uint32_t>(division); i++) {
+		nextDevision = static_cast<float>(i + 1) / division;
+		start = Lerp(Lerp(p0,p1,currentDivision),Lerp(p1,p2,currentDivision),currentDivision);
+		end = Lerp(Lerp(p0,p1,nextDevision),Lerp(p1,p2,nextDevision),nextDevision);
+
+		ndcStartPos = TransformVector(start,viewProjectionMa);
+		ndcEndPos = TransformVector(end,viewProjectionMa);
+
+		scStartPos = TransformVector(ndcStartPos,viewPortMa);
+		scEndPos = TransformVector(ndcEndPos,viewPortMa);
+
+		Novice::DrawLine(
+			static_cast<int>(scStartPos.x),
+			static_cast<int>(scStartPos.y),
+			static_cast<int>(scEndPos.x),
+			static_cast<int>(scEndPos.y),
+			color
+		);
+
+		currentDivision = nextDevision;
+	}
+}
