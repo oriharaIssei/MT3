@@ -1,6 +1,22 @@
 #include "OBB.h"
 
+#include "imgui.h"
 #include "Novice.h"
+
+void OBB::DebugUpdate(const std::string &windowName) {
+#ifdef _DEBUG
+	ImGui::Begin(windowName.c_str());
+	ImGui::DragFloat3("Center",&center.x,0.1f);
+	ImGui::DragFloat3("Size",&size.x,0.1f,1.0f);
+	ImGui::DragFloat3("Rotate",&rotate.x,0.1f);
+	UpdateOrientations();
+	ImGui::DragFloat3("Orientation[0]",&orientations[0].x,0.1f);
+	ImGui::DragFloat3("Orientation[1]",&orientations[1].x,0.1f);
+	ImGui::DragFloat3("Orientation[2]",&orientations[2].x,0.1f);
+	ImGui::End();
+	worldMat = MakeMatrix::Affine({1.0f,1.0f,1.0f},rotate,center);
+#endif // _DEBUG
+}
 
 void OBB::UpdateOrientations() {
 	MyMatrix4x4 rotateMat = MakeMatrix::RotateXYZ(rotate);

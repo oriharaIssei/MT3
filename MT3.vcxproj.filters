@@ -70,6 +70,9 @@
     <ClCompile Include="Code\Primitive\OBB.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
+    <ClCompile Include="Code\CollisionFunc\CollisionFunc.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\KamataEngine\DirectXGame\audio\Audio.h">
@@ -153,5 +156,6 @@
     <ClInclude Include="Code\Primitive\Triangle.h" />
     <ClInclude Include="Code\Primitive\AABB.h" />
     <ClInclude Include="Code\Primitive\OBB.h" />
+    <ClInclude Include="Code\CollisionFunc\CollisionFunc.h" />
   </ItemGroup>
 </Project>

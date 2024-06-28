@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "MyMatrix4x4.h"
 #include "Vec3.h"
 #include <stdint.h>
@@ -20,6 +22,7 @@ struct OBB {
 
 	MyMatrix4x4 worldMat;
 
+	void DebugUpdate(const std::string &windowName);
 	void UpdateOrientations();
 	void Draw(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa);
 };
