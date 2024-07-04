@@ -4,6 +4,7 @@ struct Vec3 {
 	float x,y,z;
 
 	Vec3(float x,float y,float z):x(x),y(y),z(z) {};
+	Vec3(const float *vp):x(vp[0]),y(vp[1]),z(vp[2]) {};
 	Vec3():x(0),y(0),z(0) {};
 
 	///

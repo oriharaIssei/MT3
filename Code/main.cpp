@@ -54,18 +54,33 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Sphere p0 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.8f,0.58f,1.0f}},
-		.radius = 0.1f,
-		.color = BLACK
+	Sphere shoulder = {.transformData = {
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,-6.8f},
+		{0.2f,1.0f,0.0f}
+	},
+		.radius = 0.01f,
+		.color = RED
 	};
-	Sphere p1 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{1.76f,1.0f,-0.3f}},
-		.radius = 0.1f,
-		.color = BLACK
+	Sphere elbow = {.transformData = {
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,-1.4f},
+		{0.4f,0.0f,0.0f}
+	},
+		.radius = 0.01f,
+		.color = GREEN
 	};
-	Sphere p2 = {.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.94f,-0.7f,2.3f}},
-		.radius = 0.1f,
-		.color = BLACK
+	Sphere hand = {.transformData = {
+		{1.0f,1.0f,1.0f},
+		{0.0f,0.0f,0.0f},
+		{0.3f,0.0f,0.0f}
+	},
+		.radius = 0.01f,
+		.color = BLUE
 	};
+
+	Segment shoulder_elbowLine = {.color = WHITE};
+	Segment elbow_handLine = {.color = WHITE};
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -95,9 +110,17 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		p0.DebugUpdate("p0");
-		p1.DebugUpdate("p1");
-		p2.DebugUpdate("p2");
+		shoulder.DebugUpdate("shoulder");
+		elbow.DebugUpdate("elbow");
+		elbow.worldMa = elbow.worldMa * shoulder.worldMa;
+		hand.DebugUpdate("hand");
+		hand.worldMa = hand.worldMa * elbow.worldMa;
+
+		shoulder_elbowLine.origin = {shoulder.worldMa[3]};
+		shoulder_elbowLine.diff = {Vec3(elbow.worldMa[3]) - shoulder_elbowLine.origin};
+
+		elbow_handLine.origin = {elbow.worldMa[3]};
+		elbow_handLine.diff = {Vec3(hand.worldMa[3]) - elbow_handLine.origin};
 
 		///
 		/// ↑更新処理ここまで
@@ -108,10 +131,12 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		///
 
 		DrawGrid(camera.vpMa_,viewPortMa);
-		DrawBezier(p0.transformData.translate,p1.transformData.translate,p2.transformData.translate,camera.vpMa_,viewPortMa,WHITE);
-		p0.Draw(camera.vpMa_,viewPortMa);
-		p1.Draw(camera.vpMa_,viewPortMa);
-		p2.Draw(camera.vpMa_,viewPortMa);
+		shoulder.Draw(camera.vpMa_,viewPortMa);
+		elbow.Draw(camera.vpMa_,viewPortMa);
+		hand.Draw(camera.vpMa_,viewPortMa);
+
+		shoulder_elbowLine.Draw(camera.vpMa_,viewPortMa);
+		elbow_handLine.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
