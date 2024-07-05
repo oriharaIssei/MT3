@@ -82,6 +82,19 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 	Segment shoulder_elbowLine = {.color = WHITE};
 	Segment elbow_handLine = {.color = WHITE};
 
+	Vec3 a = {0.2f,1.0f,0.0f};
+	Vec3 b = {2.4f,3.1f,1.2f};
+	Vec3 c = a + b;
+	Vec3 d = a - b;
+	Vec3 e = a * 2.4f;
+
+	Vec3 rotate = {0.4f,1.43f,-0.8f};
+	MyMatrix4x4 rotateX = MakeMatrix::RotateX(rotate.x);
+	MyMatrix4x4 rotateY = MakeMatrix::RotateY(rotate.y);
+	MyMatrix4x4 rotateZ = MakeMatrix::RotateZ(rotate.z);
+
+	MyMatrix4x4 rotateXYZ = rotateX * rotateY * rotateZ;
+
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
 	char preKeys[256] = {0};
@@ -99,28 +112,32 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		/// ↓更新処理ここから
 		///
 
-		ImGui::Begin("Camera");
-		ImGui::DragFloat3("Translate",&camera.transform_.translate.x,0.01f);
-		ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
+		//ImGui::Begin("Camera");
+		//ImGui::DragFloat3("Translate",&camera.transform_.translate.x,0.01f);
+		//ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
+		//ImGui::End();
+
+		ImGui::Begin("03_02_basic");
+		ImGui::Text("c:%f,%f,%f",c.x,c.y,c.z);
+		ImGui::Text("d:%f,%f,%f",d.x,d.y,d.z);
+		ImGui::Text("e:%f,%f,%f",e.x,e.y,e.z);
+
+		ImGui::Text("matrix:\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f",
+					rotateXYZ[0][0],rotateXYZ[0][1],rotateXYZ[0][2],rotateXYZ[0][3],
+					rotateXYZ[1][0],rotateXYZ[1][1],rotateXYZ[1][2],rotateXYZ[1][3],
+					rotateXYZ[2][0],rotateXYZ[2][1],rotateXYZ[2][2],rotateXYZ[2][3],
+					rotateXYZ[3][0],rotateXYZ[3][1],rotateXYZ[3][2],rotateXYZ[3][3]
+		);
+
 		ImGui::End();
 
-		camera.vpMa_ = MakeMatrix::Affine(
+	/*	camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
 			camera.transform_.rotate,
 			camera.transform_.translate
-		).Inverse() * projectionMa;
+		).Inverse() * projectionMa;*/
 
-		shoulder.DebugUpdate("shoulder");
-		elbow.DebugUpdate("elbow");
-		elbow.worldMa = elbow.worldMa * shoulder.worldMa;
-		hand.DebugUpdate("hand");
-		hand.worldMa = hand.worldMa * elbow.worldMa;
-
-		shoulder_elbowLine.origin = {shoulder.worldMa[3]};
-		shoulder_elbowLine.diff = {Vec3(elbow.worldMa[3]) - shoulder_elbowLine.origin};
-
-		elbow_handLine.origin = {elbow.worldMa[3]};
-		elbow_handLine.diff = {Vec3(hand.worldMa[3]) - elbow_handLine.origin};
+		
 
 		///
 		/// ↑更新処理ここまで
@@ -130,13 +147,6 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		/// ↓描画処理ここから
 		///
 
-		DrawGrid(camera.vpMa_,viewPortMa);
-		shoulder.Draw(camera.vpMa_,viewPortMa);
-		elbow.Draw(camera.vpMa_,viewPortMa);
-		hand.Draw(camera.vpMa_,viewPortMa);
-
-		shoulder_elbowLine.Draw(camera.vpMa_,viewPortMa);
-		elbow_handLine.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
