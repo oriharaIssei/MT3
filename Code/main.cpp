@@ -11,9 +11,7 @@
 
 #include "Camera.h"
 
-#include "Lines.h"
-#include "Ball.h"
-#include "Spring.h"
+#include "Sphere.h"
 
 #include <imgui.h>
 
@@ -25,9 +23,10 @@ float Lerp(float p0,float p1,float t);
 Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t);
 
 void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color);
+void DrawCatmullRomLine(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const Vec3 &p3,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color);
 
 // Windowsアプリでのエントリーポイント(main関数)
-int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
+int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	const float kWindowWidth = 1280.0f;
 	const float kWindowHeight = 720.0f;
@@ -50,30 +49,27 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Spring spring {.anchor {0.0f,0.0f,0.0f},
-		.naturalLength = 1.0f,
-		.stiffness = 100.0f,
-		.dampCoefficient = 2.0f
+	Sphere controlPos[4] = {
+		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.8f,0.58f,1.0f}},
+		.radius = 0.01f,
+		.color = BLACK},
+		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{1.76f,1.0f,-0.3f}},
+		.radius = 0.01f,
+		.color = BLACK},
+		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.94f,-0.7f,2.3f}},
+		.radius = 0.01f,
+		.color = BLACK},
+		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.53f,-0.26f,-0.15f}},
+		.radius = 0.01f,
+		.color = BLACK}
 	};
-	Ball ball {
-		.pos = {1.2f,0.0f,0.0f},
-		.radius = 0.05f,
-		.mass = 2.0f,
-		.acceleration = {0.0f,0.0f,0.0f},
-		.velocity = {0.0f,0.0f,0.0f},
-		.color = BLUE
-	};
-
-	bool start = false;
-
-	constexpr float delTime = 1.0f / 60.0f;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
 	char preKeys[256] = {0};
 
 	// ウィンドウの×ボタンが押されるまでループ
-	while(Novice::ProcessMessage() == 0) {
+	while(Novice::ProcessMessage() == 0){
 		// フレームの開始
 		Novice::BeginFrame();
 
@@ -86,11 +82,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		///
 
 		ImGui::Begin("Window");
-		if(ImGui::TreeNode("Camera")) {
+		if(ImGui::TreeNode("Camera")){
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
-		start = ImGui::Button("Start");
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -98,20 +93,14 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 			camera.transform_.rotate,
 			camera.transform_.translate
 		).Inverse() * projectionMa;
-		if(start) {
-			Vec3 diff = ball.pos - spring.anchor;
-			float length = diff.length();
-			if(length != 0) {
-				Vec3 restPos = spring.anchor + (diff.Normalize() * spring.naturalLength);
-				Vec3 displacement = (ball.pos - restPos) * length;
-				Vec3 restringFoce = displacement * -spring.stiffness;
-				Vec3 dampingFoce = ball.velocity * -spring.dampCoefficient;
-				Vec3 foce = restringFoce + dampingFoce;
-				ball.acceleration = (foce / ball.mass);
-			}
-			ball.velocity += ball.acceleration * delTime;
-			ball.pos += ball.velocity * delTime;
-		}
+
+		ImGui::Begin("ControlPoints");
+		controlPos[0].DebugUpdate("p0");
+		controlPos[1].DebugUpdate("p1");
+		controlPos[2].DebugUpdate("p2");
+		controlPos[3].DebugUpdate("p3");
+		ImGui::End();
+
 
 		///
 		/// ↑更新処理ここまで
@@ -121,8 +110,14 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		/// ↓描画処理ここから
 		///
 
-		ball.Draw(camera.vpMa_,viewPortMa);
-		spring.Draw(diff,camera.vpMa_,viewPortMa,WHITE);
+		for(size_t i = 0; i < 4; i++){
+			controlPos[i].Draw(camera.vpMa_,viewPortMa);
+		}
+
+		DrawCatmullRomLine(controlPos[0].worldMa[3],controlPos[0].worldMa[3],controlPos[1].worldMa[3],controlPos[2].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
+		DrawCatmullRomLine(controlPos[0].worldMa[3],controlPos[1].worldMa[3],controlPos[2].worldMa[3],controlPos[3].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
+		DrawCatmullRomLine(controlPos[1].worldMa[3],controlPos[2].worldMa[3],controlPos[3].worldMa[3],controlPos[3].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
+
 
 		///
 		/// ↑描画処理ここまで
@@ -132,7 +127,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		Novice::EndFrame();
 
 		// ESCキーが押されたらループを抜ける
-		if(preKeys[DIK_ESCAPE] == 0 && keys[DIK_ESCAPE] != 0) {
+		if(preKeys[DIK_ESCAPE] == 0 && keys[DIK_ESCAPE] != 0){
 			break;
 		}
 	}
@@ -143,7 +138,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 }
 
 
-void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa) {
+void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa){
 	// Grid の半分の幅
 	constexpr float kGridHalfWidth = 2.0f;
 	// 分割数
@@ -151,7 +146,7 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa)
 	// 1 つ分の長さ
 	constexpr float kGridEvery = (kGridHalfWidth * 2.0f) / static_cast<float>(kSubDivision);
 
-	for(uint32_t xIndex = 0; xIndex <= kSubDivision; ++xIndex) {
+	for(uint32_t xIndex = 0; xIndex <= kSubDivision; ++xIndex){
 		// 線の始点
 		Vec3 startPos = {-kGridHalfWidth + kGridEvery * xIndex,0.0f,-kGridHalfWidth};
 		// 線の終点
@@ -172,7 +167,7 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa)
 			0xaaaaaaff
 		);
 	}
-	for(uint32_t zIndex = 0; zIndex <= kSubDivision; ++zIndex) {
+	for(uint32_t zIndex = 0; zIndex <= kSubDivision; ++zIndex){
 		// 線の始点
 		Vec3 startPos = {kGridHalfWidth,0.0f,-kGridHalfWidth + kGridEvery * zIndex};
 		// 線の終点
@@ -195,15 +190,15 @@ void DrawGrid(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa)
 	}
 }
 
-float Lerp(float p0,float p1,float t) {
+float Lerp(float p0,float p1,float t){
 	return ((1 - t) * p0) + (t * p1);
 }
 
-Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t) {
+Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t){
 	return Vec3(Lerp(p0.x,p1.x,t),Lerp(p0.y,p1.y,t),Lerp(p0.z,p1.z,t));
 }
 
-void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color) {
+void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color){
 	constexpr float division = 64;
 
 	Vec3 start,end;
@@ -211,10 +206,47 @@ void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &
 	Vec3 scStartPos,scEndPos;
 	float currentDivision = 0,nextDevision;
 
-	for(uint32_t i = 0; i < static_cast<uint32_t>(division); i++) {
+	for(uint32_t i = 0; i < static_cast<uint32_t>(division); i++){
 		nextDevision = static_cast<float>(i + 1) / division;
 		start = Lerp(Lerp(p0,p1,currentDivision),Lerp(p1,p2,currentDivision),currentDivision);
 		end = Lerp(Lerp(p0,p1,nextDevision),Lerp(p1,p2,nextDevision),nextDevision);
+
+		ndcStartPos = TransformVector(start,viewProjectionMa);
+		ndcEndPos = TransformVector(end,viewProjectionMa);
+
+		scStartPos = TransformVector(ndcStartPos,viewPortMa);
+		scEndPos = TransformVector(ndcEndPos,viewPortMa);
+
+		Novice::DrawLine(
+			static_cast<int>(scStartPos.x),
+			static_cast<int>(scStartPos.y),
+			static_cast<int>(scEndPos.x),
+			static_cast<int>(scEndPos.y),
+			color
+		);
+
+		currentDivision = nextDevision;
+	}
+}
+
+void DrawCatmullRomLine(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const Vec3 &p3,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color){
+	constexpr float division = 64;
+
+	Vec3 start,end;
+	Vec3 ndcStartPos,ndcEndPos;
+	Vec3 scStartPos,scEndPos;
+	float currentDivision = 0,nextDevision;
+
+	for(uint32_t i = 0; i < static_cast<uint32_t>(division); i++){
+		nextDevision = static_cast<float>(i + 1) / division;
+		start = ((-p0 + p1 * 3.0f - p2 * 3 + p3) * (currentDivision * currentDivision * currentDivision) +
+						(p0 * 2 - p1 * 5 + p2 * 4 - p3) * (currentDivision * currentDivision) +
+						(-p0 + p2) * currentDivision +
+						p1 * 2) * 0.5f;
+		end = ((-p0 + p1 * 3.0f - p2 * 3 + p3) * (nextDevision * nextDevision * nextDevision) +
+						(p0 * 2 - p1 * 5 + p2 * 4 - p3) * (nextDevision * nextDevision) +
+						(-p0 + p2) * nextDevision +
+						p1 * 2) * 0.5f;
 
 		ndcStartPos = TransformVector(start,viewProjectionMa);
 		ndcEndPos = TransformVector(end,viewProjectionMa);
