@@ -12,12 +12,8 @@
 #include "Camera.h"
 
 #include "Lines.h"
-#include "Triangle.h"
-#include "Plane.h"
-#include "Sphere.h"
-
-#include "OBB.h"
-#include "AABB.h"
+#include "Ball.h"
+#include "Spring.h"
 
 #include <imgui.h>
 
@@ -54,46 +50,23 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Sphere shoulder = {.transformData = {
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,-6.8f},
-		{0.2f,1.0f,0.0f}
-	},
-		.radius = 0.01f,
-		.color = RED
+	Spring spring {.anchor {0.0f,0.0f,0.0f},
+		.naturalLength = 1.0f,
+		.stiffness = 100.0f,
+		.dampCoefficient = 2.0f
 	};
-	Sphere elbow = {.transformData = {
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,-1.4f},
-		{0.4f,0.0f,0.0f}
-	},
-		.radius = 0.01f,
-		.color = GREEN
-	};
-	Sphere hand = {.transformData = {
-		{1.0f,1.0f,1.0f},
-		{0.0f,0.0f,0.0f},
-		{0.3f,0.0f,0.0f}
-	},
-		.radius = 0.01f,
+	Ball ball {
+		.pos = {1.2f,0.0f,0.0f},
+		.radius = 0.05f,
+		.mass = 2.0f,
+		.acceleration = {0.0f,0.0f,0.0f},
+		.velocity = {0.0f,0.0f,0.0f},
 		.color = BLUE
 	};
 
-	Segment shoulder_elbowLine = {.color = WHITE};
-	Segment elbow_handLine = {.color = WHITE};
+	bool start = false;
 
-	Vec3 a = {0.2f,1.0f,0.0f};
-	Vec3 b = {2.4f,3.1f,1.2f};
-	Vec3 c = a + b;
-	Vec3 d = a - b;
-	Vec3 e = a * 2.4f;
-
-	Vec3 rotate = {0.4f,1.43f,-0.8f};
-	MyMatrix4x4 rotateX = MakeMatrix::RotateX(rotate.x);
-	MyMatrix4x4 rotateY = MakeMatrix::RotateY(rotate.y);
-	MyMatrix4x4 rotateZ = MakeMatrix::RotateZ(rotate.z);
-
-	MyMatrix4x4 rotateXYZ = rotateX * rotateY * rotateZ;
+	constexpr float delTime = 1.0f / 60.0f;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -112,32 +85,33 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		/// ↓更新処理ここから
 		///
 
-		//ImGui::Begin("Camera");
-		//ImGui::DragFloat3("Translate",&camera.transform_.translate.x,0.01f);
-		//ImGui::DragFloat3("Rotate",&camera.transform_.rotate.x,0.01f);
-		//ImGui::End();
-
-		ImGui::Begin("03_02_basic");
-		ImGui::Text("c:%f,%f,%f",c.x,c.y,c.z);
-		ImGui::Text("d:%f,%f,%f",d.x,d.y,d.z);
-		ImGui::Text("e:%f,%f,%f",e.x,e.y,e.z);
-
-		ImGui::Text("matrix:\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f\n%f,%f,%f,%f",
-					rotateXYZ[0][0],rotateXYZ[0][1],rotateXYZ[0][2],rotateXYZ[0][3],
-					rotateXYZ[1][0],rotateXYZ[1][1],rotateXYZ[1][2],rotateXYZ[1][3],
-					rotateXYZ[2][0],rotateXYZ[2][1],rotateXYZ[2][2],rotateXYZ[2][3],
-					rotateXYZ[3][0],rotateXYZ[3][1],rotateXYZ[3][2],rotateXYZ[3][3]
-		);
-
+		ImGui::Begin("Window");
+		if(ImGui::TreeNode("Camera")) {
+			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
+			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
+		}
+		start = ImGui::Button("Start");
 		ImGui::End();
 
-	/*	camera.vpMa_ = MakeMatrix::Affine(
+		camera.vpMa_ = MakeMatrix::Affine(
 			camera.transform_.scale,
 			camera.transform_.rotate,
 			camera.transform_.translate
-		).Inverse() * projectionMa;*/
-
-		
+		).Inverse() * projectionMa;
+		if(start) {
+			Vec3 diff = ball.pos - spring.anchor;
+			float length = diff.length();
+			if(length != 0) {
+				Vec3 restPos = spring.anchor + (diff.Normalize() * spring.naturalLength);
+				Vec3 displacement = (ball.pos - restPos) * length;
+				Vec3 restringFoce = displacement * -spring.stiffness;
+				Vec3 dampingFoce = ball.velocity * -spring.dampCoefficient;
+				Vec3 foce = restringFoce + dampingFoce;
+				ball.acceleration = (foce / ball.mass);
+			}
+			ball.velocity += ball.acceleration * delTime;
+			ball.pos += ball.velocity * delTime;
+		}
 
 		///
 		/// ↑更新処理ここまで
@@ -147,6 +121,8 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int) {
 		/// ↓描画処理ここから
 		///
 
+		ball.Draw(camera.vpMa_,viewPortMa);
+		spring.Draw(diff,camera.vpMa_,viewPortMa,WHITE);
 
 		///
 		/// ↑描画処理ここまで
