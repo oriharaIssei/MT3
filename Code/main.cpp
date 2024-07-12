@@ -4,6 +4,7 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <numbers>
 #include <stdint.h>
 
 #include "MyMatrix4x4.h"
@@ -49,20 +50,19 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Sphere controlPos[4] = {
-		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.8f,0.58f,1.0f}},
+	Sphere sphere = {
+		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.8f,0.58f,1.0f}},
 		.radius = 0.01f,
-		.color = BLACK},
-		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{1.76f,1.0f,-0.3f}},
-		.radius = 0.01f,
-		.color = BLACK},
-		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{0.94f,-0.7f,2.3f}},
-		.radius = 0.01f,
-		.color = BLACK},
-		{.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.53f,-0.26f,-0.15f}},
-		.radius = 0.01f,
-		.color = BLACK}
+		.color = BLACK
 	};
+
+	float circleRadius = 0.8f;
+	float angle = 0.0f;
+	const float omega = std::numbers::pi_v<float>;
+
+	float delTime = 1.0f / 60.0f;
+
+	bool isUpdate;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -83,9 +83,11 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 		ImGui::Begin("Window");
 		if(ImGui::TreeNode("Camera")){
+			ImGui::TreePop();
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
+		ImGui::Checkbox("IsUpdate",&isUpdate);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -94,13 +96,15 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		ImGui::Begin("ControlPoints");
-		controlPos[0].DebugUpdate("p0");
-		controlPos[1].DebugUpdate("p1");
-		controlPos[2].DebugUpdate("p2");
-		controlPos[3].DebugUpdate("p3");
-		ImGui::End();
+		if(isUpdate){
+			Vec3 &spherePos = sphere.transformData.translate;
 
+			angle += omega * delTime;
+			spherePos = {-circleRadius * omega * std::sinf(angle),circleRadius *omega *std::cosf(angle),0.0f};
+
+		}
+
+		sphere.DebugUpdate("Sphere");
 
 		///
 		/// ↑更新処理ここまで
@@ -110,14 +114,8 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 		/// ↓描画処理ここから
 		///
 
-		for(size_t i = 0; i < 4; i++){
-			controlPos[i].Draw(camera.vpMa_,viewPortMa);
-		}
-
-		DrawCatmullRomLine(controlPos[0].worldMa[3],controlPos[0].worldMa[3],controlPos[1].worldMa[3],controlPos[2].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
-		DrawCatmullRomLine(controlPos[0].worldMa[3],controlPos[1].worldMa[3],controlPos[2].worldMa[3],controlPos[3].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
-		DrawCatmullRomLine(controlPos[1].worldMa[3],controlPos[2].worldMa[3],controlPos[3].worldMa[3],controlPos[3].worldMa[3],camera.vpMa_,viewPortMa,WHITE);
-
+		DrawGrid(camera.vpMa_,viewPortMa);
+		sphere.Draw(camera.vpMa_,viewPortMa);
 
 		///
 		/// ↑描画処理ここまで
