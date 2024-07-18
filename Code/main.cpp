@@ -13,6 +13,7 @@
 #include "Camera.h"
 
 #include "Sphere.h"
+#include "Pendulum.h"
 
 #include <imgui.h>
 
@@ -50,19 +51,13 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Sphere sphere = {
-		.transformData = {{1.0f,1.0f,1.0f},{0.0f,0.0f,0.0f},{-0.8f,0.58f,1.0f}},
-		.radius = 0.01f,
-		.color = BLACK
+	Pendulum pendulum{
+		.anchor = {0.0f,1.0f,0.0f},
+		.length = 0.8f,
+		.angle = 0.7f,
+		.angularAcceleration = 0.0f,
+		.angularVelocity = 0.0f
 	};
-
-	float circleRadius = 0.8f;
-	float angle = 0.0f;
-	const float omega = std::numbers::pi_v<float>;
-
-	float delTime = 1.0f / 60.0f;
-
-	bool isUpdate;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -87,7 +82,6 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
-		ImGui::Checkbox("IsUpdate",&isUpdate);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -96,15 +90,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		if(isUpdate){
-			Vec3 &spherePos = sphere.transformData.translate;
-
-			angle += omega * delTime;
-			spherePos = {-circleRadius * omega * std::sinf(angle),circleRadius *omega *std::cosf(angle),0.0f};
-
-		}
-
-		sphere.DebugUpdate("Sphere");
+		pendulum.Update();
 
 		///
 		/// ↑更新処理ここまで
@@ -115,7 +101,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 		///
 
 		DrawGrid(camera.vpMa_,viewPortMa);
-		sphere.Draw(camera.vpMa_,viewPortMa);
+		pendulum.Draw(camera.vpMa_,viewPortMa,WHITE);
 
 		///
 		/// ↑描画処理ここまで
