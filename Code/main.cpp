@@ -12,8 +12,7 @@
 
 #include "Camera.h"
 
-#include "Ball.h"
-#include "Spring.h"
+#include "ConicalPendulum.h"
 
 #include <imgui.h>
 
@@ -51,25 +50,13 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	Spring spring{.anchor{0.0f,0.0f,0.0f},
-		.naturalLength = 1.0f,
-		.stiffness = 100.0f,
-		.dampCoefficient = 2.0f
+	ConicalPendulum pendulum{
+		.anchor{0.0f,1.0f,0.0f},
+		.length{0.8f},
+		.halfApexAngle{0.7f},
+		.angle{0.0f},
+		.angularVelocity{0.0f}
 	};
-
-	Ball ball{
-		.pos = {1.2f,0.0f,0.0f},
-		.radius = 0.05f,
-		.mass = 2.0f,
-		.acceleration = {0.0f,0.0f,0.0f},
-		.velocity = {0.0f,0.0f,0.0f},
-		.color = BLUE
-	};
-
-	bool isStart = false;
-	constexpr float delTime = 1.0f / 60.0f;
-
-	const Vec3 kGravity = {0.0f,-9.8f,0.0f};
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -93,7 +80,6 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
-		ImGui::Checkbox("Start",&isStart);
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -102,20 +88,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		Vec3 diff = ball.pos - spring.anchor;
-		if(isStart){
-			float length = diff.length();
-			if(length != 0){
-				Vec3 restPos = spring.anchor + (diff.Normalize() * spring.naturalLength);
-				Vec3 displacement = (ball.pos - restPos) * length;
-				Vec3 restringFoce = displacement * -spring.stiffness;
-				Vec3 dampingFoce = ball.velocity * -spring.dampCoefficient;
-				Vec3 foce = restringFoce + dampingFoce;
-				ball.acceleration = (foce / ball.mass);
-			}
-			ball.velocity += (ball.acceleration * delTime) + (kGravity * delTime);
-			ball.pos += ball.velocity * delTime;
-		}
+		pendulum.Update();
 
 		///
 		/// ↑更新処理ここまで
@@ -127,8 +100,7 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 		DrawGrid(camera.vpMa_,viewPortMa);
 
-		ball.Draw(camera.vpMa_,viewPortMa);
-		spring.Draw(diff,camera.vpMa_,viewPortMa,WHITE);
+		pendulum.Draw(camera.vpMa_,viewPortMa,WHITE);
 
 		///
 		/// ↑描画処理ここまで

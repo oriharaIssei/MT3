@@ -118,6 +118,7 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClCompile Include="Code\Camera.cpp" />
     <ClCompile Include="Code\CollisionFunc\CollisionFunc.cpp" />
     <ClCompile Include="Code\MyMath\Physics\Ball.cpp" />
+    <ClCompile Include="Code\MyMath\Physics\ConicalPendulum.cpp" />
     <ClCompile Include="Code\MyMath\Physics\Pendulum.cpp" />
     <ClCompile Include="Code\MyMath\Physics\Spring.cpp" />
     <ClCompile Include="Code\Primitive\AABB.cpp" />
@@ -161,6 +162,7 @@ xcopy C:\KamataEngine\DirectXGame\Resources "$(OutDirFullPath)NoviceResources" /
     <ClInclude Include="Code\Camera.h" />
     <ClInclude Include="Code\CollisionFunc\CollisionFunc.h" />
     <ClInclude Include="Code\MyMath\Physics\Ball.h" />
+    <ClInclude Include="Code\MyMath\Physics\ConicalPendulum.h" />
     <ClInclude Include="Code\MyMath\Physics\Pendulum.h" />
     <ClInclude Include="Code\MyMath\Physics\Spring.h" />
     <ClInclude Include="Code\Primitive\AABB.h" />
