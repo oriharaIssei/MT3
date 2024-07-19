@@ -2,17 +2,21 @@
 
 #include <algorithm>
 
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <numbers>
 #include <stdint.h>
+
+#include "CollisionFunc/CollisionFunc.h"
 
 #include "MyMatrix4x4.h"
 #include "Vec3.h"
 
 #include "Camera.h"
 
-#include "ConicalPendulum.h"
+#include "Ball.h"
+#include "Sphere.h"
+
+#include "Plane.h"
 
 #include <imgui.h>
 
@@ -25,6 +29,8 @@ Vec3 Lerp(const Vec3 &p0,const Vec3 &p1,float t);
 
 void DrawBezier(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color);
 void DrawCatmullRomLine(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const Vec3 &p3,const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 viewPortMa,uint32_t color);
+
+Vec3 Refrect(const Vec3 &i,const Vec3 &normal);
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
@@ -50,13 +56,20 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	MyMatrix4x4 viewPortMa = MakeMatrix::ViewPort(0.0f,0.0f,kWindowWidth,kWindowHeight,0.0f,1.0f);
 
-	ConicalPendulum pendulum{
-		.anchor{0.0f,1.0f,0.0f},
-		.length{0.8f},
-		.halfApexAngle{0.7f},
-		.angle{0.0f},
-		.angularVelocity{0.0f}
+	Plane plane{
+		.normal = Vec3(-0.2f,0.9f,-0.3f).Normalize(),
+		.distance = 0.0f
 	};
+
+	Ball ball{
+		.pos = {0.8f,1.2f,0.3f},
+		.radius = 0.05f,
+		.mass = 2.0f,
+		.acceleration = {0.0f,-9.8f,0.0f},
+		.color = WHITE
+	};
+
+	const float delTime = 1.0f / 60.0f;
 
 	// キー入力結果を受け取る箱
 	char keys[256] = {0};
@@ -80,6 +93,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
+		if(ImGui::Button("Reset")){
+			ball.velocity = {0.0f,0.0f,0.0f};
+			ball.pos = {0.8f,1.2f,0.3f};
+		}
 		ImGui::End();
 
 		camera.vpMa_ = MakeMatrix::Affine(
@@ -88,7 +105,18 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		pendulum.Update();
+		ball.velocity += ball.acceleration * delTime;
+
+		plane.UpdatePoints(camera.vpMa_,viewPortMa);
+
+		if(CollisionSphere2Plane({.transformData = {{1.0f,1.0f,1.0f},{},{ball.pos}},.radius = ball.radius},plane)){
+			Vec3 reflected = Refrect(ball.velocity,plane.normal);
+			Vec3 projct2Normal = Projection(reflected,plane.normal);
+			Vec3 movingDir = reflected - projct2Normal;
+			ball.velocity = (projct2Normal * 0.4f + movingDir);
+		}
+
+		ball.pos += ball.velocity * delTime;
 
 		///
 		/// ↑更新処理ここまで
@@ -99,8 +127,8 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 		///
 
 		DrawGrid(camera.vpMa_,viewPortMa);
-
-		pendulum.Draw(camera.vpMa_,viewPortMa,WHITE);
+		ball.Draw(camera.vpMa_,viewPortMa);
+		plane.Draw();
 
 		///
 		/// ↑描画処理ここまで
@@ -247,4 +275,9 @@ void DrawCatmullRomLine(const Vec3 &p0,const Vec3 &p1,const Vec3 &p2,const Vec3 
 
 		currentDivision = nextDevision;
 	}
+}
+
+Vec3 Refrect(const Vec3 &i,const Vec3 &normal){
+
+	return i - normal * (2.0f * (i.dot(normal)));
 }
