@@ -85,6 +85,9 @@
     <ClCompile Include="Code\MyMath\Physics\ConicalPendulum.cpp">
       <Filter>KamataEngine</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Primitive\Capsule.cpp">
+      <Filter>KamataEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\KamataEngine\DirectXGame\audio\Audio.h">
@@ -173,5 +176,6 @@
     <ClInclude Include="Code\MyMath\Physics\Ball.h" />
     <ClInclude Include="Code\MyMath\Physics\Pendulum.h" />
     <ClInclude Include="Code\MyMath\Physics\ConicalPendulum.h" />
+    <ClInclude Include="Code\Primitive\Capsule.h" />
   </ItemGroup>
 </Project>

@@ -15,6 +15,7 @@
 
 #include "Ball.h"
 #include "Sphere.h"
+#include "Capsule.h"
 
 #include "Plane.h"
 
@@ -37,7 +38,6 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 	const float kWindowWidth = 1280.0f;
 	const float kWindowHeight = 720.0f;
-
 	// ライブラリの初期化
 	Novice::Initialize(kWindowTitle,static_cast<int>(kWindowWidth),static_cast<int>(kWindowHeight));
 
@@ -69,6 +69,10 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 		.color = WHITE
 	};
 
+	float collisionedT_ = 0;
+	bool isUpdate = false;
+	bool isFrameUpdate = 0;
+
 	const float delTime = 1.0f / 60.0f;
 
 	// キー入力結果を受け取る箱
@@ -90,9 +94,15 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 
 		ImGui::Begin("Window");
 		if(ImGui::TreeNode("Camera")){
+			ImGui::TreePop();
 			ImGui::DragFloat3("Camera Rotate",&camera.transform_.rotate.x,0.01f);
 			ImGui::DragFloat3("Camera Translate",&camera.transform_.translate.x,0.01f);
 		}
+
+		ImGui::Checkbox("IsUpdate",&isUpdate);
+
+		isFrameUpdate = ImGui::Button("UpdataFlame");
+
 		if(ImGui::Button("Reset")){
 			ball.velocity = {0.0f,0.0f,0.0f};
 			ball.pos = {0.8f,1.2f,0.3f};
@@ -105,18 +115,23 @@ int WINAPI WinMain(HINSTANCE,HINSTANCE,LPSTR,int){
 			camera.transform_.translate
 		).Inverse() * projectionMa;
 
-		ball.velocity += ball.acceleration * delTime;
-
 		plane.UpdatePoints(camera.vpMa_,viewPortMa);
 
-		if(CollisionSphere2Plane({.transformData = {{1.0f,1.0f,1.0f},{},{ball.pos}},.radius = ball.radius},plane)){
-			Vec3 reflected = Refrect(ball.velocity,plane.normal);
-			Vec3 projct2Normal = Projection(reflected,plane.normal);
-			Vec3 movingDir = reflected - projct2Normal;
-			ball.velocity = (projct2Normal * 0.4f + movingDir);
+		if(isFrameUpdate || isUpdate){
+			ball.velocity += ball.acceleration * delTime;
+
+			if(CollisionCapsule2Plane({.start = {ball.pos - ball.velocity},.end = {ball.pos},.radius = ball.radius},plane,collisionedT_)){
+				ball.pos += ball.velocity.Normalize() * (ball.velocity.length() * (1.0f - collisionedT_));
+
+				Vec3 reflected = Refrect(ball.velocity,plane.normal);
+				Vec3 projct2Normal = Projection(reflected,plane.normal);
+				Vec3 movingDir = reflected - projct2Normal;
+				ball.velocity = (projct2Normal * 1.0f + movingDir);
+			}
+
+			ball.pos += ball.velocity * delTime;
 		}
 
-		ball.pos += ball.velocity * delTime;
 
 		///
 		/// ↑更新処理ここまで
