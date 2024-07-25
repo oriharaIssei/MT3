@@ -7,9 +7,9 @@
 #include <Novice.h>
 
 Vec3 &Vec3::operator=(const Vec3 &another) {
-	this->x=another.x;
-	this->y=another.y;
-	this->z=another.z;
+	this->x = another.x;
+	this->y = another.y;
+	this->z = another.z;
 	return *this;
 }
 
@@ -22,9 +22,9 @@ Vec3 Vec3::operator+(const Vec3 &another) const {
 }
 
 Vec3 &Vec3::operator+=(const Vec3 &another) {
-	this->x+=another.x;
-	this->y+=another.y;
-	this->z+=another.z;
+	this->x += another.x;
+	this->y += another.y;
+	this->z += another.z;
 	return *this;
 }
 
@@ -37,9 +37,9 @@ Vec3 Vec3::operator-(const Vec3 &another) const {
 }
 
 Vec3 &Vec3::operator-=(const Vec3 &another) {
-	this->x-=another.x;
-	this->y-=another.y;
-	this->z-=another.z;
+	this->x -= another.x;
+	this->y -= another.y;
+	this->z -= another.z;
 	return *this;
 }
 
@@ -52,10 +52,19 @@ Vec3 Vec3::operator*(const float &scalar) const {
 }
 
 Vec3 &Vec3::operator*=(const Vec3 &another) {
-	this->x*=another.x;
-	this->y*=another.y;
-	this->z*=another.z;
+	this->x *= another.x;
+	this->y *= another.y;
+	this->z *= another.z;
 	return *this;
+}
+
+Vec3 Vec3::operator/(const float &scalar) const {
+	return Vec3(this->x / scalar,this->y / scalar,this->z / scalar);
+}
+
+Vec3 *Vec3::operator/=(const float &scalar) {
+	*this = *this / scalar;
+	return this;
 }
 
 float Vec3::length() const {
@@ -63,7 +72,7 @@ float Vec3::length() const {
 }
 
 Vec3 Vec3::Normalize() const {
-	float len=this->length();
+	float len = this->length();
 	if(len == 0.0f) {
 		return *this;
 	}
@@ -86,14 +95,14 @@ Vec3 Vec3::Cross(const Vec3 &another) const {
 	);
 }
 
-Vec3 Projection(const Vec3 &v1, const Vec3 &v2) {
+Vec3 Projection(const Vec3 &v1,const Vec3 &v2) {
 	return Vec3(v2.Normalize() * (v1.dot(v2.Normalize())));
 }
 
-void ScreenPrintVector3(int x, int y, const Vec3 &vector, const char *label) {
-	static constexpr int kColWidth=60;
-	Novice::ScreenPrintf(x, y, "%.02f", vector.x);
-	Novice::ScreenPrintf(x + kColWidth, y, "%.02f", vector.y);
-	Novice::ScreenPrintf(x + kColWidth * 2, y, "%.02f", vector.z);
-	Novice::ScreenPrintf(x + kColWidth * 3, y, "%s", label);
+void ScreenPrintVector3(int x,int y,const Vec3 &vector,const char *label) {
+	static constexpr int kColWidth = 60;
+	Novice::ScreenPrintf(x,y,"%.02f",vector.x);
+	Novice::ScreenPrintf(x + kColWidth,y,"%.02f",vector.y);
+	Novice::ScreenPrintf(x + kColWidth * 2,y,"%.02f",vector.z);
+	Novice::ScreenPrintf(x + kColWidth * 3,y,"%s",label);
 }

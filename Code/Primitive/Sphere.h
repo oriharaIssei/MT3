@@ -3,14 +3,16 @@
 #include <MyMatrix4x4.h>
 #include <Transform.h>
 
+#include <string>
+
 #include <stdint.h>
 
 struct Sphere {
 	Transform transformData;
 	float radius;
-	unsigned int color;
+	uint32_t color;
 	MyMatrix4x4 worldMa;
 
-	void Draw(const MyMatrix4x4 &viewProjectionMa, const MyMatrix4x4 &viewPortMa);
-
+	void DebugUpdate(const std::string &windowName);
+	void Draw(const MyMatrix4x4 &viewProjectionMa,const MyMatrix4x4 &viewPortMa);
 };

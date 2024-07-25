@@ -10,4 +10,3 @@ struct Camera {
 	Transform transform_;
 	MyMatrix4x4 vpMa_;
 };
-
